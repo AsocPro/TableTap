@@ -32,8 +32,8 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
 	
-        //selectedUnit.x = x - selectedUnit.size / 2;
-        //selectedUnit.y = y - selectedUnit.size / 2;
+        selectedUnit.x = x - 14;
+        selectedUnit.y = y - 14;
 	dbConnection.reducers.moveUnit(selectedUnit.id, x - 14, y - 14);
     }
 
