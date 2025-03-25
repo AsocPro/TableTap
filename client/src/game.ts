@@ -10,7 +10,7 @@ import { Identity } from '@clockworklabs/spacetimedb-sdk';
 export class Game {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
-    private units: Unit[];
+    private units: Map<number,Unit>;
     private renderer: Renderer;
 
     constructor(canvasId: string) {
@@ -30,14 +30,14 @@ export class Game {
         this.ctx = this.canvas.getContext("2d")!;
         this.canvas.width = 600;
         this.canvas.height = 400;
-        this.units = [ ]; // Initial unit
-	//this.units = dbConnection.db.unit.iter();
+	this.units = new Map([]);
 	const callback = (_ctx: EventContext, message: Message) => {
-		this.units.push(message);
+		this.units.set(message.id, message);
 		console.log(message);
 	}
 	dbConnection.db.unit.onInsert(callback);
 	const update_callback = (_ctx: EventContext, message: Message) => {
+		this.units.set(message.id, message);
 		console.log(message);
 	}
 	dbConnection.db.unit.onUpdate(update_callback);

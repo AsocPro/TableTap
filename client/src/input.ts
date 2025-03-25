@@ -11,7 +11,7 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
         const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
-        for (const unit of units) {
+        units.forEach((unit, id) => {
 	    console.log(unit);
             if (x >= unit.x && x <= unit.x + 28 && y >= unit.y && y <= unit.y + 28) {
                 selectedUnit = unit;
@@ -20,9 +20,9 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
                 document.addEventListener("mouseup", stopMove);
                 document.addEventListener("touchmove", moveUnit);
                 document.addEventListener("touchend", stopMove);
-                break;
+		//TODO probably need to optimize a break or something here to not loop all units every time
             }
-        }
+        });
     }
 
     function moveUnit(event: MouseEvent | TouchEvent) {
