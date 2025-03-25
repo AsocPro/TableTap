@@ -1,7 +1,11 @@
-import { Unit } from "./unit";
 import { rollD6 } from "./dice";
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
+import { DbConnection } from './module_bindings';
+import type { EventContext, Message, Unit, User } from './module_bindings';
+import { Identity } from '@clockworklabs/spacetimedb-sdk';
+//import type { DbConnection, DbConnectionBuilder, Identity, ConnectionId, Event, ReducerEvent } from '@clockworklabs/spacetimedb-sdk';
+
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -10,13 +14,35 @@ export class Game {
     private renderer: Renderer;
 
     constructor(canvasId: string) {
+	const dbConnection: DbConnection = DbConnection.builder()
+  .withUri('ws://nubita.asoc.pro:3002') // Replace with your server address
+  .withModuleName('tabletap')
+  .onConnect((dbConnection, identity, token) => {
+	dbConnection.subscriptionBuilder()
+            .onApplied((ctx) => {
+                 console.log("Subscription applied");
+              })
+            .subscribe(["SELECT * FROM unit"]);
+  })
+  .build();
+
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         this.ctx = this.canvas.getContext("2d")!;
         this.canvas.width = 600;
         this.canvas.height = 400;
-        this.units = [new Unit(50, 50), new Unit(100,100)]; // Initial unit
+        this.units = [ ]; // Initial unit
+	//this.units = dbConnection.db.unit.iter();
+	const callback = (_ctx: EventContext, message: Message) => {
+		this.units.push(message);
+		console.log(message);
+	}
+	dbConnection.db.unit.onInsert(callback);
+	const update_callback = (_ctx: EventContext, message: Message) => {
+		console.log(message);
+	}
+	dbConnection.db.unit.onUpdate(update_callback);
         this.renderer = new Renderer(this.ctx, this.units);
-	handleInput(this.canvas, this.units);
+	handleInput(dbConnection, this.canvas, this.units);
     }
 
     start() {
