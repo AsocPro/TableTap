@@ -41,6 +41,12 @@ import { AddTerrain } from "./add_terrain_reducer.ts";
 export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
 export { AddUnit };
+import { DeleteObstacle } from "./delete_obstacle_reducer.ts";
+export { DeleteObstacle };
+import { DeleteTerrain } from "./delete_terrain_reducer.ts";
+export { DeleteTerrain };
+import { DeleteUnit } from "./delete_unit_reducer.ts";
+export { DeleteUnit };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
@@ -95,6 +101,18 @@ const REMOTE_MODULE = {
       reducerName: "add_unit",
       argsType: AddUnit.getTypeScriptAlgebraicType(),
     },
+    delete_obstacle: {
+      reducerName: "delete_obstacle",
+      argsType: DeleteObstacle.getTypeScriptAlgebraicType(),
+    },
+    delete_terrain: {
+      reducerName: "delete_terrain",
+      argsType: DeleteTerrain.getTypeScriptAlgebraicType(),
+    },
+    delete_unit: {
+      reducerName: "delete_unit",
+      argsType: DeleteUnit.getTypeScriptAlgebraicType(),
+    },
     identity_connected: {
       reducerName: "identity_connected",
       argsType: IdentityConnected.getTypeScriptAlgebraicType(),
@@ -137,6 +155,9 @@ export type Reducer = never
 | { name: "AddObstacle", args: AddObstacle }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
+| { name: "DeleteObstacle", args: DeleteObstacle }
+| { name: "DeleteTerrain", args: DeleteTerrain }
+| { name: "DeleteUnit", args: DeleteUnit }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "MoveUnit", args: MoveUnit }
@@ -193,6 +214,54 @@ export class RemoteReducers {
     this.connection.offReducer("add_unit", callback);
   }
 
+  deleteObstacle(obstacleId: bigint) {
+    const __args = { obstacleId };
+    let __writer = new BinaryWriter(1024);
+    DeleteObstacle.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_obstacle", __argsBuffer, this.setCallReducerFlags.deleteObstacleFlags);
+  }
+
+  onDeleteObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint) => void) {
+    this.connection.onReducer("delete_obstacle", callback);
+  }
+
+  removeOnDeleteObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint) => void) {
+    this.connection.offReducer("delete_obstacle", callback);
+  }
+
+  deleteTerrain(terrainId: bigint) {
+    const __args = { terrainId };
+    let __writer = new BinaryWriter(1024);
+    DeleteTerrain.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_terrain", __argsBuffer, this.setCallReducerFlags.deleteTerrainFlags);
+  }
+
+  onDeleteTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint) => void) {
+    this.connection.onReducer("delete_terrain", callback);
+  }
+
+  removeOnDeleteTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint) => void) {
+    this.connection.offReducer("delete_terrain", callback);
+  }
+
+  deleteUnit(unitId: bigint) {
+    const __args = { unitId };
+    let __writer = new BinaryWriter(1024);
+    DeleteUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_unit", __argsBuffer, this.setCallReducerFlags.deleteUnitFlags);
+  }
+
+  onDeleteUnit(callback: (ctx: ReducerEventContext, unitId: bigint) => void) {
+    this.connection.onReducer("delete_unit", callback);
+  }
+
+  removeOnDeleteUnit(callback: (ctx: ReducerEventContext, unitId: bigint) => void) {
+    this.connection.offReducer("delete_unit", callback);
+  }
+
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
   }
@@ -241,6 +310,21 @@ export class SetReducerFlags {
   addUnitFlags: CallReducerFlags = 'FullUpdate';
   addUnit(flags: CallReducerFlags) {
     this.addUnitFlags = flags;
+  }
+
+  deleteObstacleFlags: CallReducerFlags = 'FullUpdate';
+  deleteObstacle(flags: CallReducerFlags) {
+    this.deleteObstacleFlags = flags;
+  }
+
+  deleteTerrainFlags: CallReducerFlags = 'FullUpdate';
+  deleteTerrain(flags: CallReducerFlags) {
+    this.deleteTerrainFlags = flags;
+  }
+
+  deleteUnitFlags: CallReducerFlags = 'FullUpdate';
+  deleteUnit(flags: CallReducerFlags) {
+    this.deleteUnitFlags = flags;
   }
 
   moveUnitFlags: CallReducerFlags = 'FullUpdate';
