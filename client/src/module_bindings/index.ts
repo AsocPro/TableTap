@@ -35,6 +35,8 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { AddObstacle } from "./add_obstacle_reducer.ts";
+export { AddObstacle };
 import { AddTerrain } from "./add_terrain_reducer.ts";
 export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
@@ -47,12 +49,16 @@ import { MoveUnit } from "./move_unit_reducer.ts";
 export { MoveUnit };
 
 // Import and reexport all table handle types
+import { ObstacleTableHandle } from "./obstacle_table.ts";
+export { ObstacleTableHandle };
 import { TerrainTableHandle } from "./terrain_table.ts";
 export { TerrainTableHandle };
 import { UnitTableHandle } from "./unit_table.ts";
 export { UnitTableHandle };
 
 // Import and reexport all types
+import { Obstacle } from "./obstacle_type.ts";
+export { Obstacle };
 import { Terrain } from "./terrain_type.ts";
 export { Terrain };
 import { Unit } from "./unit_type.ts";
@@ -60,6 +66,11 @@ export { Unit };
 
 const REMOTE_MODULE = {
   tables: {
+    obstacle: {
+      tableName: "obstacle",
+      rowType: Obstacle.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
     terrain: {
       tableName: "terrain",
       rowType: Terrain.getTypeScriptAlgebraicType(),
@@ -72,6 +83,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    add_obstacle: {
+      reducerName: "add_obstacle",
+      argsType: AddObstacle.getTypeScriptAlgebraicType(),
+    },
     add_terrain: {
       reducerName: "add_terrain",
       argsType: AddTerrain.getTypeScriptAlgebraicType(),
@@ -119,6 +134,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "AddObstacle", args: AddObstacle }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
 | { name: "IdentityConnected", args: IdentityConnected }
@@ -128,6 +144,22 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
+
+  addObstacle(obstacleId: bigint, newX: number, newY: number, length: number, height: number) {
+    const __args = { obstacleId, newX, newY, length, height };
+    let __writer = new BinaryWriter(1024);
+    AddObstacle.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("add_obstacle", __argsBuffer, this.setCallReducerFlags.addObstacleFlags);
+  }
+
+  onAddObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+    this.connection.onReducer("add_obstacle", callback);
+  }
+
+  removeOnAddObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+    this.connection.offReducer("add_obstacle", callback);
+  }
 
   addTerrain(terrainId: bigint, newX: number, newY: number, length: number, height: number) {
     const __args = { terrainId, newX, newY, length, height };
@@ -196,6 +228,11 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  addObstacleFlags: CallReducerFlags = 'FullUpdate';
+  addObstacle(flags: CallReducerFlags) {
+    this.addObstacleFlags = flags;
+  }
+
   addTerrainFlags: CallReducerFlags = 'FullUpdate';
   addTerrain(flags: CallReducerFlags) {
     this.addTerrainFlags = flags;
@@ -215,6 +252,10 @@ export class SetReducerFlags {
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
+
+  get obstacle(): ObstacleTableHandle {
+    return new ObstacleTableHandle(this.connection.clientCache.getOrCreateTable<Obstacle>(REMOTE_MODULE.tables.obstacle));
+  }
 
   get terrain(): TerrainTableHandle {
     return new TerrainTableHandle(this.connection.clientCache.getOrCreateTable<Terrain>(REMOTE_MODULE.tables.terrain));
