@@ -158,3 +158,30 @@ pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, new_x: i32, new_y: i32
     }
     ctx.db.terrain().insert(Terrain { id: new_id, x: new_x, y: new_y, length, height });
 }
+
+#[spacetimedb::reducer]
+pub fn delete_unit(ctx: &ReducerContext, unit_id: u64) {
+    if let Some(_unit) = ctx.db.unit().id().find(unit_id) {
+        ctx.db.unit().id().delete(unit_id);
+    } else {
+        log::error!("Failed to delete unit: ID {} not found", unit_id);
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn delete_obstacle(ctx: &ReducerContext, obstacle_id: u64) {
+    if let Some(_obstacle) = ctx.db.obstacle().id().find(obstacle_id) {
+        ctx.db.obstacle().id().delete(obstacle_id);
+    } else {
+        log::error!("Failed to delete obstacle: ID {} not found", obstacle_id);
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
+    if let Some(_terrain) = ctx.db.terrain().id().find(terrain_id) {
+        ctx.db.terrain().id().delete(terrain_id);
+    } else {
+        log::error!("Failed to delete terrain: ID {} not found", terrain_id);
+    }
+}
