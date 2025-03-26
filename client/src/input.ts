@@ -5,17 +5,17 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
     let selectedUnit: Unit | null = null;
 
     function startMove(event: MouseEvent | TouchEvent) {
-	    console.log(startMove);
+	    //console.log(startMove);
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
         units.forEach((unit, id) => {
-	    console.log(unit);
+	    //console.log(unit);
             if (x >= unit.x && x <= unit.x + 28 && y >= unit.y && y <= unit.y + 28) {
                 selectedUnit = unit;
-	    console.log(selectedUnit);
+	    //console.log(selectedUnit);
                 document.addEventListener("mousemove", moveUnit);
                 document.addEventListener("mouseup", stopMove);
                 document.addEventListener("touchmove", moveUnit);

@@ -33,12 +33,12 @@ export class Game {
 	this.units = new Map([]);
 	const callback = (_ctx: EventContext, message: Message) => {
 		this.units.set(message.id, message);
-		console.log(message);
+		//console.log(message);
 	}
 	dbConnection.db.unit.onInsert(callback);
 	const update_callback = (_ctx: EventContext, message: Message) => {
 		this.units.set(message.id, message);
-		console.log(message);
+		//console.log(message);
 	}
 	dbConnection.db.unit.onUpdate(update_callback);
         this.renderer = new Renderer(this.ctx, this.units);
