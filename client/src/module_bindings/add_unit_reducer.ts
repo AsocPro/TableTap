@@ -9,26 +9,29 @@ import {
   AlgebraicValue,
   BinaryReader,
   BinaryWriter,
-  CallReducerFlags,
   ConnectionId,
   DbConnectionBuilder,
   DbConnectionImpl,
-  DbContext,
-  ErrorContextInterface,
-  Event,
-  EventContextInterface,
   Identity,
   ProductType,
   ProductTypeElement,
-  ReducerEventContextInterface,
   SubscriptionBuilderImpl,
-  SubscriptionEventContextInterface,
   SumType,
   SumTypeVariant,
   TableCache,
   TimeDuration,
   Timestamp,
   deepEqual,
+} from "@clockworklabs/spacetimedb-sdk";
+
+import type {
+  CallReducerFlags,
+  DbContext,
+  ErrorContextInterface,
+  Event,
+  EventContextInterface,
+  ReducerEventContextInterface,
+  SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
 export type AddUnit = {
