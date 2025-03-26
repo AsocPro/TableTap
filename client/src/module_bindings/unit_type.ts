@@ -38,6 +38,8 @@ export type Unit = {
   id: bigint,
   x: number,
   y: number,
+  size: number,
+  color: string,
 };
 
 /**
@@ -53,6 +55,8 @@ export namespace Unit {
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
       new ProductTypeElement("x", AlgebraicType.createI32Type()),
       new ProductTypeElement("y", AlgebraicType.createI32Type()),
+      new ProductTypeElement("size", AlgebraicType.createI32Type()),
+      new ProductTypeElement("color", AlgebraicType.createStringType()),
     ]);
   }
 

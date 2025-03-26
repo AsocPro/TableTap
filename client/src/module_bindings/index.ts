@@ -35,6 +35,8 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { AddUnit } from "./add_unit_reducer.ts";
+export { AddUnit };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
@@ -59,6 +61,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    add_unit: {
+      reducerName: "add_unit",
+      argsType: AddUnit.getTypeScriptAlgebraicType(),
+    },
     identity_connected: {
       reducerName: "identity_connected",
       argsType: IdentityConnected.getTypeScriptAlgebraicType(),
@@ -98,6 +104,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "AddUnit", args: AddUnit }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "MoveUnit", args: MoveUnit }
@@ -105,6 +112,22 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
+
+  addUnit(unitId: bigint, newX: number, newY: number) {
+    const __args = { unitId, newX, newY };
+    let __writer = new BinaryWriter(1024);
+    AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
+  }
+
+  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
+    this.connection.onReducer("add_unit", callback);
+  }
+
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
+    this.connection.offReducer("add_unit", callback);
+  }
 
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
@@ -141,6 +164,11 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  addUnitFlags: CallReducerFlags = 'FullUpdate';
+  addUnit(flags: CallReducerFlags) {
+    this.addUnitFlags = flags;
+  }
+
   moveUnitFlags: CallReducerFlags = 'FullUpdate';
   moveUnit(flags: CallReducerFlags) {
     this.moveUnitFlags = flags;
