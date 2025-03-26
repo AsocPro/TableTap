@@ -35,6 +35,8 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { AddTerrain } from "./add_terrain_reducer.ts";
+export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
 export { AddUnit };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
@@ -45,15 +47,24 @@ import { MoveUnit } from "./move_unit_reducer.ts";
 export { MoveUnit };
 
 // Import and reexport all table handle types
+import { TerrainTableHandle } from "./terrain_table.ts";
+export { TerrainTableHandle };
 import { UnitTableHandle } from "./unit_table.ts";
 export { UnitTableHandle };
 
 // Import and reexport all types
+import { Terrain } from "./terrain_type.ts";
+export { Terrain };
 import { Unit } from "./unit_type.ts";
 export { Unit };
 
 const REMOTE_MODULE = {
   tables: {
+    terrain: {
+      tableName: "terrain",
+      rowType: Terrain.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
     unit: {
       tableName: "unit",
       rowType: Unit.getTypeScriptAlgebraicType(),
@@ -61,6 +72,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    add_terrain: {
+      reducerName: "add_terrain",
+      argsType: AddTerrain.getTypeScriptAlgebraicType(),
+    },
     add_unit: {
       reducerName: "add_unit",
       argsType: AddUnit.getTypeScriptAlgebraicType(),
@@ -104,6 +119,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
@@ -113,19 +129,35 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addUnit(unitId: bigint, newX: number, newY: number) {
-    const __args = { unitId, newX, newY };
+  addTerrain(terrainId: bigint, newX: number, newY: number, length: number, height: number) {
+    const __args = { terrainId, newX, newY, length, height };
+    let __writer = new BinaryWriter(1024);
+    AddTerrain.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("add_terrain", __argsBuffer, this.setCallReducerFlags.addTerrainFlags);
+  }
+
+  onAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+    this.connection.onReducer("add_terrain", callback);
+  }
+
+  removeOnAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+    this.connection.offReducer("add_terrain", callback);
+  }
+
+  addUnit(unitId: bigint, newX: number, newY: number, size: number, color: string) {
+    const __args = { unitId, newX, newY, size, color };
     let __writer = new BinaryWriter(1024);
     AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
   }
 
-  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
+  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
     this.connection.onReducer("add_unit", callback);
   }
 
-  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
     this.connection.offReducer("add_unit", callback);
   }
 
@@ -164,6 +196,11 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  addTerrainFlags: CallReducerFlags = 'FullUpdate';
+  addTerrain(flags: CallReducerFlags) {
+    this.addTerrainFlags = flags;
+  }
+
   addUnitFlags: CallReducerFlags = 'FullUpdate';
   addUnit(flags: CallReducerFlags) {
     this.addUnitFlags = flags;
@@ -178,6 +215,10 @@ export class SetReducerFlags {
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
+
+  get terrain(): TerrainTableHandle {
+    return new TerrainTableHandle(this.connection.clientCache.getOrCreateTable<Terrain>(REMOTE_MODULE.tables.terrain));
+  }
 
   get unit(): UnitTableHandle {
     return new UnitTableHandle(this.connection.clientCache.getOrCreateTable<Unit>(REMOTE_MODULE.tables.unit));

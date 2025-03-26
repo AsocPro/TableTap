@@ -33,40 +33,40 @@ import type {
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-
-export type AddUnit = {
-  unitId: bigint,
-  newX: number,
-  newY: number,
-  size: number,
-  color: string,
+export type Terrain = {
+  id: bigint,
+  x: number,
+  y: number,
+  length: number,
+  height: number,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AddUnit {
+export namespace Terrain {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("unitId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("newX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("newY", AlgebraicType.createI32Type()),
-      new ProductTypeElement("size", AlgebraicType.createI32Type()),
-      new ProductTypeElement("color", AlgebraicType.createStringType()),
+      new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("x", AlgebraicType.createI32Type()),
+      new ProductTypeElement("y", AlgebraicType.createI32Type()),
+      new ProductTypeElement("length", AlgebraicType.createI32Type()),
+      new ProductTypeElement("height", AlgebraicType.createI32Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AddUnit): void {
-    AddUnit.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: Terrain): void {
+    Terrain.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AddUnit {
-    return AddUnit.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): Terrain {
+    return Terrain.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
+
 
