@@ -10,11 +10,25 @@ pub struct Unit {
     color: String
 }
 
+#[spacetimedb::table(name = terrain, public)]
+pub struct Terrain {
+    #[primary_key]
+    id: u64,
+    x: i32,
+    y: i32,
+    length: i32,
+    height: i32
+}
+
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
     // Called when the module is initially published
     _ctx.db.unit().insert(Unit { id: 1, x: 50, y: 50, size: 28, color: "blue".to_string() });
-    _ctx.db.unit().insert(Unit { id: 2, x: 50, y: 50, size: 28, color: "red".to_string() });
+    _ctx.db.unit().insert(Unit { id: 2, x: 150, y: 50, size: 28, color: "red".to_string() });
+    
+    // Add some initial terrain
+    _ctx.db.terrain().insert(Terrain { id: 1, x: 100, y: 150, length: 200, height: 50 });
+    _ctx.db.terrain().insert(Terrain { id: 2, x: 350, y: 200, length: 100, height: 100 });
 }
 
 #[spacetimedb::reducer(client_connected)]
@@ -49,11 +63,14 @@ pub fn add_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32, size
     }
     ctx.db.unit().insert(Unit { id: new_id, x: new_x, y: new_y, size: size, color: color });
 }
+
 #[spacetimedb::reducer]
 pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
     if let Some(unit) = ctx.db.unit().id().find(unit_id) {
         // Check for collisions with other units
         let mut will_collide = false;
+        
+        // Check collision with other units
         for other_unit in ctx.db.unit().iter() {
             if other_unit.id == unit_id {
                 continue;
@@ -76,6 +93,30 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
                 break;
             }
         }
+        
+        // Check collision with terrain if no unit collision found
+        if !will_collide {
+            let unit_radius = unit.size / 2;
+            let unit_center_x = new_x + unit_radius;
+            let unit_center_y = new_y + unit_radius;
+            
+            for terrain in ctx.db.terrain().iter() {
+                // Check if circle intersects with rectangle
+                // Find closest point on rectangle to circle center
+                let closest_x = unit_center_x.max(terrain.x).min(terrain.x + terrain.length);
+                let closest_y = unit_center_y.max(terrain.y).min(terrain.y + terrain.height);
+                
+                // Calculate distance from closest point to circle center
+                let dx = unit_center_x - closest_x;
+                let dy = unit_center_y - closest_y;
+                let distance_squared = dx * dx + dy * dy;
+                
+                if distance_squared < unit_radius * unit_radius {
+                    will_collide = true;
+                    break;
+                }
+            }
+        }
 
         // Only move if there's no collision
         if !will_collide {
@@ -84,4 +125,13 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
     } else { 
         log::error!("Failed to update unit: ID {} not found", unit_id)
     }
+}
+
+#[spacetimedb::reducer]
+pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, new_x: i32, new_y: i32, length: i32, height: i32) {
+    let mut new_id = terrain_id;
+    while let Some(_terrain) = ctx.db.terrain().id().find(terrain_id) {
+        new_id = new_id + 1;
+    }
+    ctx.db.terrain().insert(Terrain { id: new_id, x: new_x, y: new_y, length, height });
 }

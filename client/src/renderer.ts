@@ -1,28 +1,27 @@
-import type { Unit } from "./module_bindings";
+import type { Unit, Terrain } from "./module_bindings";
 
 export class Renderer {
     private ctx: CanvasRenderingContext2D;
-    private units: Unit[];
+    private units: Map<number, Unit>;
+    private terrain: Map<number, Terrain>;
 
-    constructor(ctx: CanvasRenderingContext2D, units: Unit[]) {
+    constructor(ctx: CanvasRenderingContext2D, units: Map<number, Unit>, terrain: Map<number, Terrain>) {
         this.ctx = ctx;
         this.units = units;
+        this.terrain = terrain;
     }
 
     draw() {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
-        // Draw grid
-//        const gridSize = 50;
-//        for (let x = 0; x < this.ctx.canvas.width; x += gridSize) {
-//            for (let y = 0; y < this.ctx.canvas.height; y += gridSize) {
-//                this.ctx.strokeStyle = "#aaa";
-//                this.ctx.strokeRect(x, y, gridSize, gridSize);
-//            }
-//        }
+        // Draw terrain first (so units appear on top)
+        this.terrain.forEach((terrain) => {
+            this.ctx.fillStyle = "#888888"; // Gray color for terrain
+            this.ctx.fillRect(terrain.x, terrain.y, terrain.length, terrain.height);
+        });
 
         // Draw units
-        this.units.forEach((unit, id) => {
+        this.units.forEach((unit) => {
             this.ctx.fillStyle = unit.color;
             this.ctx.beginPath();
             this.ctx.arc(unit.x + unit.size/2, unit.y + unit.size/2, unit.size/2, 0, Math.PI * 2);
