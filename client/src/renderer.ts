@@ -23,8 +23,10 @@ export class Renderer {
 
         // Draw units
         this.units.forEach((unit, id) => {
-            this.ctx.fillStyle = "blue";
-            this.ctx.fillRect(unit.x, unit.y, 28, 28);
+            this.ctx.fillStyle = unit.color;
+            this.ctx.beginPath();
+            this.ctx.arc(unit.x + unit.size/2, unit.y + unit.size/2, unit.size/2, 0, Math.PI * 2);
+            this.ctx.fill();
         });
     }
 }

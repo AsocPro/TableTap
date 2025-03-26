@@ -12,8 +12,12 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
         units.forEach((unit, id) => {
-	    //console.log(unit);
-            if (x >= unit.x && x <= unit.x + 28 && y >= unit.y && y <= unit.y + 28) {
+            // Calculate distance from click to center of circle
+            const centerX = unit.x + unit.size/2;
+            const centerY = unit.y + unit.size/2;
+            const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+            
+            if (distance <= unit.size/2) {
                 selectedUnit = unit;
 	    //console.log(selectedUnit);
                 document.addEventListener("mousemove", moveUnit);
@@ -32,9 +36,9 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
 	
-        selectedUnit.x = x - 14;
-        selectedUnit.y = y - 14;
-	dbConnection.reducers.moveUnit(selectedUnit.id, x - 14, y - 14);
+        selectedUnit.x = x - selectedUnit.size / 2;
+        selectedUnit.y = y - selectedUnit.size / 2;
+	dbConnection.reducers.moveUnit(selectedUnit.id, x - selectedUnit.size / 2, y - selectedUnit.size / 2);
     }
 
     function stopMove() {
