@@ -10,6 +10,16 @@ pub struct Unit {
     color: String
 }
 
+#[spacetimedb::table(name = obstacle, public)]
+pub struct Obstacle {
+    #[primary_key]
+    id: u64,
+    x: i32,
+    y: i32,
+    length: i32,
+    height: i32
+}
+
 #[spacetimedb::table(name = terrain, public)]
 pub struct Terrain {
     #[primary_key]
@@ -26,9 +36,13 @@ pub fn init(_ctx: &ReducerContext) {
     _ctx.db.unit().insert(Unit { id: 1, x: 50, y: 50, size: 28, color: "blue".to_string() });
     _ctx.db.unit().insert(Unit { id: 2, x: 150, y: 50, size: 28, color: "red".to_string() });
     
-    // Add some initial terrain
-    _ctx.db.terrain().insert(Terrain { id: 1, x: 100, y: 150, length: 200, height: 50 });
-    _ctx.db.terrain().insert(Terrain { id: 2, x: 350, y: 200, length: 100, height: 100 });
+    // Add some initial obstacles
+    _ctx.db.obstacle().insert(Obstacle { id: 1, x: 100, y: 150, length: 200, height: 50 });
+    _ctx.db.obstacle().insert(Obstacle { id: 2, x: 350, y: 200, length: 100, height: 100 });
+    
+    // Add some initial terrain (traversable)
+    _ctx.db.terrain().insert(Terrain { id: 1, x: 200, y: 250, length: 150, height: 100 });
+    _ctx.db.terrain().insert(Terrain { id: 2, x: 50, y: 100, length: 80, height: 80 });
 }
 
 #[spacetimedb::reducer(client_connected)]
@@ -94,17 +108,17 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
             }
         }
         
-        // Check collision with terrain if no unit collision found
+        // Check collision with obstacles if no unit collision found
         if !will_collide {
             let unit_radius = unit.size / 2;
             let unit_center_x = new_x + unit_radius;
             let unit_center_y = new_y + unit_radius;
             
-            for terrain in ctx.db.terrain().iter() {
+            for obstacle in ctx.db.obstacle().iter() {
                 // Check if circle intersects with rectangle
                 // Find closest point on rectangle to circle center
-                let closest_x = unit_center_x.max(terrain.x).min(terrain.x + terrain.length);
-                let closest_y = unit_center_y.max(terrain.y).min(terrain.y + terrain.height);
+                let closest_x = unit_center_x.max(obstacle.x).min(obstacle.x + obstacle.length);
+                let closest_y = unit_center_y.max(obstacle.y).min(obstacle.y + obstacle.height);
                 
                 // Calculate distance from closest point to circle center
                 let dx = unit_center_x - closest_x;
@@ -125,6 +139,15 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
     } else { 
         log::error!("Failed to update unit: ID {} not found", unit_id)
     }
+}
+
+#[spacetimedb::reducer]
+pub fn add_obstacle(ctx: &ReducerContext, obstacle_id: u64, new_x: i32, new_y: i32, length: i32, height: i32) {
+    let mut new_id = obstacle_id;
+    while let Some(_obstacle) = ctx.db.obstacle().id().find(obstacle_id) {
+        new_id = new_id + 1;
+    }
+    ctx.db.obstacle().insert(Obstacle { id: new_id, x: new_x, y: new_y, length, height });
 }
 
 #[spacetimedb::reducer]

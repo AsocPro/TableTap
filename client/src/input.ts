@@ -1,17 +1,16 @@
 import type { Unit } from "./module_bindings";
 import { DbConnection } from './module_bindings';
 
-export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElement, units: Unit[]) {
+export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElement, units: Map<number, Unit>) {
     let selectedUnit: Unit | null = null;
 
     function startMove(event: MouseEvent | TouchEvent) {
-	    //console.log(startMove);
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
-        units.forEach((unit, id) => {
+        units.forEach((unit) => {
             // Calculate distance from click to center of circle
             const centerX = unit.x + unit.size/2;
             const centerY = unit.y + unit.size/2;
@@ -19,12 +18,10 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
             
             if (distance <= unit.size/2) {
                 selectedUnit = unit;
-	    //console.log(selectedUnit);
                 document.addEventListener("mousemove", moveUnit);
                 document.addEventListener("mouseup", stopMove);
                 document.addEventListener("touchmove", moveUnit);
                 document.addEventListener("touchend", stopMove);
-		//TODO probably need to optimize a break or something here to not loop all units every time
             }
         });
     }
@@ -35,10 +32,13 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
         const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
         const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
 
-	
-        selectedUnit.x = x - selectedUnit.size / 2;
-        selectedUnit.y = y - selectedUnit.size / 2;
-	dbConnection.reducers.moveUnit(selectedUnit.id, x - selectedUnit.size / 2, y - selectedUnit.size / 2);
+        // Calculate proposed new position
+        const newX = x - selectedUnit.size / 2;
+        const newY = y - selectedUnit.size / 2;
+
+        // Only update locally after the reducer processes the move
+        // The reducer will handle collision detection server-side
+        dbConnection.reducers.moveUnit(selectedUnit.id, newX, newY);
     }
 
     function stopMove() {
