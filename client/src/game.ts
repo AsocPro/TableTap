@@ -15,7 +15,8 @@ export class Game {
 
     constructor(canvasId: string) {
 	const dbConnection: DbConnection = DbConnection.builder()
-  .withUri('ws://nubita.asoc.pro:3002') // Replace with your server address
+  .withUri('ws://localhost:3000') // Replace with your server address
+  //.withUri('ws://nubita.asoc.pro:3002') // Replace with your server address
   .withModuleName('tabletap')
   .onConnect((dbConnection, identity, token) => {
 	dbConnection.subscriptionBuilder()
