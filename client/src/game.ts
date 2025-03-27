@@ -8,8 +8,19 @@ import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
 
 export class Game {
-    private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
+    private canvasContainer: HTMLDivElement;
+    private canvasLayers: {
+        terrain: HTMLCanvasElement;
+        underlay: HTMLCanvasElement;
+        units: HTMLCanvasElement;
+        overlay: HTMLCanvasElement;
+    };
+    private ctx: {
+        terrain: CanvasRenderingContext2D;
+        underlay: CanvasRenderingContext2D;
+        units: CanvasRenderingContext2D;
+        overlay: CanvasRenderingContext2D;
+    };
     private units: Map<number, Unit>;
     private obstacles: Map<number, Obstacle>;
     private terrain: Map<number, Terrain>;
@@ -29,10 +40,39 @@ export class Game {
             })
             .build();
 
-        this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-        this.ctx = this.canvas.getContext("2d")!;
-        this.canvas.width = 600;
-        this.canvas.height = 400;
+        // Get the existing canvas and replace it with a container for multiple canvases
+        const existingCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
+        const canvasWidth = 600;
+        const canvasHeight = 400;
+        
+        // Create a container for all canvases
+        this.canvasContainer = document.createElement('div');
+        this.canvasContainer.style.position = 'relative';
+        this.canvasContainer.style.width = `${canvasWidth}px`;
+        this.canvasContainer.style.height = `${canvasHeight}px`;
+        this.canvasContainer.style.margin = '0 auto';
+        
+        // Replace the existing canvas with our container
+        if (existingCanvas.parentNode) {
+            existingCanvas.parentNode.replaceChild(this.canvasContainer, existingCanvas);
+        }
+
+        // Create the four canvas layers
+        this.canvasLayers = {
+            terrain: this.createCanvasLayer(canvasWidth, canvasHeight, 1),
+            underlay: this.createCanvasLayer(canvasWidth, canvasHeight, 2),
+            units: this.createCanvasLayer(canvasWidth, canvasHeight, 3),
+            overlay: this.createCanvasLayer(canvasWidth, canvasHeight, 4)
+        };
+        
+        // Get the 2D contexts for each canvas
+        this.ctx = {
+            terrain: this.canvasLayers.terrain.getContext('2d')!,
+            underlay: this.canvasLayers.underlay.getContext('2d')!,
+            units: this.canvasLayers.units.getContext('2d')!,
+            overlay: this.canvasLayers.overlay.getContext('2d')!
+        };
+        
         this.units = new Map([]);
         this.obstacles = new Map([]);
         this.terrain = new Map([]);
@@ -86,10 +126,22 @@ export class Game {
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
         this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain);
-        handleInput(this.dbConnection, this.canvas, this.units);
+        handleInput(this.dbConnection, this.canvasLayers.overlay, this.units);
         
         // Create UI elements
         this.createUI();
+    }
+
+    private createCanvasLayer(width: number, height: number, zIndex: number): HTMLCanvasElement {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.position = 'absolute';
+        canvas.style.left = '0';
+        canvas.style.top = '0';
+        canvas.style.zIndex = zIndex.toString();
+        this.canvasContainer.appendChild(canvas);
+        return canvas;
     }
 
     start() {
@@ -156,7 +208,7 @@ export class Game {
             
             // Initialize tab content
             if (tabName === 'Game Setup') {
-                new GameSetupTab(contentPanel, this.dbConnection, this.canvas);
+                new GameSetupTab(contentPanel, this.dbConnection, this.canvasLayers.overlay);
             } else if (tabName === 'Actions') {
                 new ActionsTab(contentPanel, this.dbConnection);
             }
@@ -166,9 +218,9 @@ export class Game {
         contentPanels.forEach(panel => uiContainer.appendChild(panel));
         
         // Append UI to the document
-        const canvasParent = this.canvas.parentElement;
+        const canvasParent = this.canvasContainer.parentElement;
         if (canvasParent) {
-            canvasParent.insertBefore(uiContainer, this.canvas.nextSibling);
+            canvasParent.insertBefore(uiContainer, this.canvasContainer.nextSibling);
         } else {
             document.body.appendChild(uiContainer);
         }
