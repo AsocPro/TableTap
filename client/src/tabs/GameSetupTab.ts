@@ -56,7 +56,7 @@ export class GameSetupTab {
             }
             
             // Create input fields
-            const inputs: { [key: string]: HTMLInputElement } = {};
+            const inputs: Record<string, HTMLInputElement> = {};
             fields.forEach(field => {
                 const label = document.createElement('label');
                 label.textContent = field.name.charAt(0).toUpperCase() + field.name.slice(1) + ':';
@@ -91,7 +91,9 @@ export class GameSetupTab {
             addButton.addEventListener('click', () => {
                 switch (type) {
                     case 'unit':
-                        const color = inputs['color'].value;
+                        const color = inputs['color']?.value;
+                        if (!color) return;
+                        
                         const hexToName: {[key: string]: string} = {
                             '#3498db': 'blue',
                             '#e74c3c': 'red',
@@ -103,28 +105,28 @@ export class GameSetupTab {
                         const colorName = hexToName[color] || color;
                         this.dbConnection.reducers.addUnit(
                             BigInt(Date.now()),
-                            parseInt(inputs['x'].value),
-                            parseInt(inputs['y'].value),
-                            parseInt(inputs['size'].value),
+                            parseInt(inputs['x']?.value || '100'),
+                            parseInt(inputs['y']?.value || '100'),
+                            parseInt(inputs['size']?.value || '28'),
                             colorName
                         );
                         break;
                     case 'obstacle':
                         this.dbConnection.reducers.addObstacle(
                             BigInt(Date.now()),
-                            parseInt(inputs['x'].value),
-                            parseInt(inputs['y'].value),
-                            parseInt(inputs['length'].value),
-                            parseInt(inputs['height'].value)
+                            parseInt(inputs['x']?.value || '100'),
+                            parseInt(inputs['y']?.value || '100'),
+                            parseInt(inputs['length']?.value || '100'),
+                            parseInt(inputs['height']?.value || '50')
                         );
                         break;
                     case 'terrain':
                         this.dbConnection.reducers.addTerrain(
                             BigInt(Date.now()),
-                            parseInt(inputs['x'].value),
-                            parseInt(inputs['y'].value),
-                            parseInt(inputs['length'].value),
-                            parseInt(inputs['height'].value)
+                            parseInt(inputs['x']?.value || '100'),
+                            parseInt(inputs['y']?.value || '100'),
+                            parseInt(inputs['length']?.value || '100'),
+                            parseInt(inputs['height']?.value || '50')
                         );
                         break;
                 }

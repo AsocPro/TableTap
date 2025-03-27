@@ -7,8 +7,19 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
     function startMove(event: MouseEvent | TouchEvent) {
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
-        const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
-        const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
+        let x: number;
+        let y: number;
+
+        if ('touches' in event && event.touches.length > 0) {
+            const touch = event.touches[0]!;
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+        } else if (event instanceof MouseEvent) {
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
+        } else {
+            return;
+        }
 
         units.forEach((unit) => {
             // Calculate distance from click to center of circle
@@ -29,8 +40,19 @@ export function handleInput(dbConnection: DbConnection, canvas: HTMLCanvasElemen
     function moveUnit(event: MouseEvent | TouchEvent) {
         if (!selectedUnit) return;
         const rect = canvas.getBoundingClientRect();
-        const x = "touches" in event ? event.touches[0].clientX - rect.left : event.clientX - rect.left;
-        const y = "touches" in event ? event.touches[0].clientY - rect.top : event.clientY - rect.top;
+        let x: number;
+        let y: number;
+
+        if ('touches' in event && event.touches.length > 0) {
+            const touch = event.touches[0]!;
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+        } else if (event instanceof MouseEvent) {
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
+        } else {
+            return;
+        }
 
         // Calculate proposed new position
         const newX = x - selectedUnit.size / 2;
