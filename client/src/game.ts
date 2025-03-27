@@ -116,12 +116,12 @@ export class Game {
         uiContainer.style.backgroundColor = '#f0f0f0';
         uiContainer.style.borderRadius = '5px';
         
-        // Create tabs for different object types
+        // Create tabs for different sections
         const tabContainer = document.createElement('div');
         tabContainer.style.display = 'flex';
         tabContainer.style.marginBottom = '10px';
         
-        const tabs = ['Unit', 'Obstacle', 'Terrain'];
+        const tabs = ['Game Setup', 'Actions'];
         const tabElements: HTMLDivElement[] = [];
         const contentPanels: HTMLDivElement[] = [];
         
@@ -157,7 +157,11 @@ export class Game {
             contentPanels.push(contentPanel);
             
             // Populate content based on tab
-            this.populateTabContent(contentPanel, tabName.toLowerCase());
+            if (tabName === 'Game Setup') {
+                this.populateGameSetupContent(contentPanel);
+            } else if (tabName === 'Actions') {
+                this.populateActionsContent(contentPanel);
+            }
         });
         
         uiContainer.appendChild(tabContainer);
@@ -197,110 +201,159 @@ export class Game {
         }
     }
     
-    private populateTabContent(container: HTMLDivElement, type: string) {
-        const form = document.createElement('form');
-        form.style.display = 'grid';
-        form.style.gridTemplateColumns = 'auto 1fr';
-        form.style.gap = '8px';
-        form.style.alignItems = 'center';
+    private populateGameSetupContent(container: HTMLDivElement) {
+        const setupContainer = document.createElement('div');
+        setupContainer.style.display = 'grid';
+        setupContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        setupContainer.style.gap = '20px';
         
-        let fields: {name: string, type: string, value: any}[] = [];
-        
-        // Define fields based on object type
-        switch (type) {
-            case 'unit':
-                fields = [
-                    { name: 'x', type: 'number', value: 100 },
-                    { name: 'y', type: 'number', value: 100 },
-                    { name: 'size', type: 'number', value: 28 },
-                    { name: 'color', type: 'color', value: '#3498db' }
-                ];
-                break;
-            case 'obstacle':
-            case 'terrain':
-                fields = [
-                    { name: 'x', type: 'number', value: 100 },
-                    { name: 'y', type: 'number', value: 100 },
-                    { name: 'length', type: 'number', value: 100 },
-                    { name: 'height', type: 'number', value: 50 }
-                ];
-                break;
-        }
-        
-        // Create input fields
-        const inputs: { [key: string]: HTMLInputElement } = {};
-        fields.forEach(field => {
-            const label = document.createElement('label');
-            label.textContent = field.name.charAt(0).toUpperCase() + field.name.slice(1) + ':';
+        // Create forms for each object type
+        ['unit', 'obstacle', 'terrain'].forEach(type => {
+            const form = document.createElement('form');
+            form.style.backgroundColor = '#fff';
+            form.style.padding = '10px';
+            form.style.borderRadius = '5px';
             
-            const input = document.createElement('input');
-            input.type = field.type;
-            input.value = field.value;
-            input.id = `${type}-${field.name}`;
-            inputs[field.name] = input;
+            const title = document.createElement('h3');
+            title.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+            title.style.marginTop = '0';
+            title.style.marginBottom = '10px';
+            form.appendChild(title);
             
-            form.appendChild(label);
-            form.appendChild(input);
-        });
-        
-        // Create add button
-        const addButton = document.createElement('button');
-        addButton.textContent = `Add ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        addButton.type = 'button';
-        addButton.style.gridColumn = '1 / span 2';
-        addButton.style.marginTop = '10px';
-        addButton.style.padding = '8px';
-        addButton.style.backgroundColor = '#4CAF50';
-        addButton.style.color = 'white';
-        addButton.style.border = 'none';
-        addButton.style.borderRadius = '4px';
-        addButton.style.cursor = 'pointer';
-        
-        // Add event listener to the button
-        addButton.addEventListener('click', () => {
+            let fields: {name: string, type: string, value: any}[] = [];
+            
+            // Define fields based on object type
             switch (type) {
                 case 'unit':
-                    const color = inputs['color'].value;
-                    const hexToName: {[key: string]: string} = {
-                        '#3498db': 'blue',
-                        '#e74c3c': 'red',
-                        '#2ecc71': 'green',
-                        '#f39c12': 'orange',
-                        '#9b59b6': 'purple'
-                    };
-                    
-                    const colorName = hexToName[color] || color;
-                    this.dbConnection.reducers.addUnit(
-                        BigInt(Date.now()), // Use timestamp as ID
-                        parseInt(inputs['x'].value),
-                        parseInt(inputs['y'].value),
-                        parseInt(inputs['size'].value),
-                        colorName
-                    );
+                    fields = [
+                        { name: 'x', type: 'number', value: 100 },
+                        { name: 'y', type: 'number', value: 100 },
+                        { name: 'size', type: 'number', value: 28 },
+                        { name: 'color', type: 'color', value: '#3498db' }
+                    ];
                     break;
                 case 'obstacle':
-                    this.dbConnection.reducers.addObstacle(
-                        BigInt(Date.now()),
-                        parseInt(inputs['x'].value),
-                        parseInt(inputs['y'].value),
-                        parseInt(inputs['length'].value),
-                        parseInt(inputs['height'].value)
-                    );
-                    break;
                 case 'terrain':
-                    this.dbConnection.reducers.addTerrain(
-                        BigInt(Date.now()),
-                        parseInt(inputs['x'].value),
-                        parseInt(inputs['y'].value),
-                        parseInt(inputs['length'].value),
-                        parseInt(inputs['height'].value)
-                    );
+                    fields = [
+                        { name: 'x', type: 'number', value: 100 },
+                        { name: 'y', type: 'number', value: 100 },
+                        { name: 'length', type: 'number', value: 100 },
+                        { name: 'height', type: 'number', value: 50 }
+                    ];
                     break;
             }
+            
+            // Create input fields
+            const inputs: { [key: string]: HTMLInputElement } = {};
+            fields.forEach(field => {
+                const label = document.createElement('label');
+                label.textContent = field.name.charAt(0).toUpperCase() + field.name.slice(1) + ':';
+                label.style.display = 'block';
+                label.style.marginBottom = '5px';
+                
+                const input = document.createElement('input');
+                input.type = field.type;
+                input.value = field.value;
+                input.id = `${type}-${field.name}`;
+                input.style.width = '100%';
+                input.style.marginBottom = '10px';
+                inputs[field.name] = input;
+                
+                form.appendChild(label);
+                form.appendChild(input);
+            });
+            
+            // Create add button
+            const addButton = document.createElement('button');
+            addButton.textContent = `Add ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            addButton.type = 'button';
+            addButton.style.width = '100%';
+            addButton.style.padding = '8px';
+            addButton.style.backgroundColor = '#4CAF50';
+            addButton.style.color = 'white';
+            addButton.style.border = 'none';
+            addButton.style.borderRadius = '4px';
+            addButton.style.cursor = 'pointer';
+            
+            // Add event listener to the button
+            addButton.addEventListener('click', () => {
+                switch (type) {
+                    case 'unit':
+                        const color = inputs['color'].value;
+                        const hexToName: {[key: string]: string} = {
+                            '#3498db': 'blue',
+                            '#e74c3c': 'red',
+                            '#2ecc71': 'green',
+                            '#f39c12': 'orange',
+                            '#9b59b6': 'purple'
+                        };
+                        
+                        const colorName = hexToName[color] || color;
+                        this.dbConnection.reducers.addUnit(
+                            BigInt(Date.now()),
+                            parseInt(inputs['x'].value),
+                            parseInt(inputs['y'].value),
+                            parseInt(inputs['size'].value),
+                            colorName
+                        );
+                        break;
+                    case 'obstacle':
+                        this.dbConnection.reducers.addObstacle(
+                            BigInt(Date.now()),
+                            parseInt(inputs['x'].value),
+                            parseInt(inputs['y'].value),
+                            parseInt(inputs['length'].value),
+                            parseInt(inputs['height'].value)
+                        );
+                        break;
+                    case 'terrain':
+                        this.dbConnection.reducers.addTerrain(
+                            BigInt(Date.now()),
+                            parseInt(inputs['x'].value),
+                            parseInt(inputs['y'].value),
+                            parseInt(inputs['length'].value),
+                            parseInt(inputs['height'].value)
+                        );
+                        break;
+                }
+            });
+            
+            form.appendChild(addButton);
+            setupContainer.appendChild(form);
         });
         
-        form.appendChild(addButton);
-        container.appendChild(form);
+        container.appendChild(setupContainer);
+    }
+
+    private populateActionsContent(container: HTMLDivElement) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.style.display = 'grid';
+        actionsContainer.style.gap = '10px';
+        
+        // Create dice roll button
+        const rollButton = document.createElement('button');
+        rollButton.textContent = 'Roll Dice';
+        rollButton.style.padding = '8px 16px';
+        rollButton.style.backgroundColor = '#3498db';
+        rollButton.style.color = 'white';
+        rollButton.style.border = 'none';
+        rollButton.style.borderRadius = '4px';
+        rollButton.style.cursor = 'pointer';
+        
+        const resultDisplay = document.createElement('div');
+        resultDisplay.style.marginTop = '10px';
+        resultDisplay.style.padding = '10px';
+        resultDisplay.style.backgroundColor = '#fff';
+        resultDisplay.style.borderRadius = '4px';
+        
+        rollButton.addEventListener('click', () => {
+            const result = this.rollDice();
+            resultDisplay.textContent = `Dice Roll Result: ${result}`;
+        });
+        
+        actionsContainer.appendChild(rollButton);
+        actionsContainer.appendChild(resultDisplay);
+        container.appendChild(actionsContainer);
     }
     
     private deleteListener = (e: MouseEvent) => {
