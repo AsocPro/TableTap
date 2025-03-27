@@ -185,3 +185,36 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
         log::error!("Failed to delete terrain: ID {} not found", terrain_id);
     }
 }
+
+#[spacetimedb::reducer]
+pub fn delete_at_coordinates(ctx: &ReducerContext, x: i32, y: i32) {
+    // Check units
+    for unit in ctx.db.unit().iter() {
+        let center_x = unit.x + unit.size/2;
+        let center_y = unit.y + unit.size/2;
+        let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
+        
+        if distance <= (unit.size/2).pow(2) as f64 {
+            ctx.db.unit().id().delete(unit.id);
+            return;
+        }
+    }
+    
+    // Check obstacles
+    for obstacle in ctx.db.obstacle().iter() {
+        if x >= obstacle.x && x <= obstacle.x + obstacle.length &&
+           y >= obstacle.y && y <= obstacle.y + obstacle.height {
+            ctx.db.obstacle().id().delete(obstacle.id);
+            return;
+        }
+    }
+    
+    // Check terrain
+    for terrain in ctx.db.terrain().iter() {
+        if x >= terrain.x && x <= terrain.x + terrain.length &&
+           y >= terrain.y && y <= terrain.y + terrain.height {
+            ctx.db.terrain().id().delete(terrain.id);
+            return;
+        }
+    }
+}

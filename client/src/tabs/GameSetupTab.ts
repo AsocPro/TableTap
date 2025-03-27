@@ -169,35 +169,8 @@ export class GameSetupTab {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Check if click is on a unit
-        this.dbConnection.db.unit.forEach((unit) => {
-            const centerX = unit.x + unit.size/2;
-            const centerY = unit.y + unit.size/2;
-            const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-            
-            if (distance <= unit.size/2) {
-                this.dbConnection.reducers.deleteUnit(unit.id);
-                return;
-            }
-        });
-        
-        // Check if click is on an obstacle
-        this.dbConnection.db.obstacle.forEach((obstacle) => {
-            if (x >= obstacle.x && x <= obstacle.x + obstacle.length &&
-                y >= obstacle.y && y <= obstacle.y + obstacle.height) {
-                this.dbConnection.reducers.deleteObstacle(obstacle.id);
-                return;
-            }
-        });
-        
-        // Check if click is on terrain
-        this.dbConnection.db.terrain.forEach((terrain) => {
-            if (x >= terrain.x && x <= terrain.x + terrain.length &&
-                y >= terrain.y && y <= terrain.y + terrain.height) {
-                this.dbConnection.reducers.deleteTerrain(terrain.id);
-                return;
-            }
-        });
+        // Send coordinates to server for deletion
+        this.dbConnection.reducers.deleteAtCoordinates(x, y);
     };
     
     private setupDeleteListener() {
