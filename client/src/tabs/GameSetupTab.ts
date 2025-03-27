@@ -164,12 +164,23 @@ export class GameSetupTab {
         this.container.appendChild(deleteButton);
     }
 
-    private deleteListener = (e: MouseEvent) => {
+    private deleteListener = (e: MouseEvent | TouchEvent) => {
         if (!this.deleteMode) return;
         
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        let x: number;
+        let y: number;
+
+        if ('touches' in e && e.touches.length > 0) {
+            const touch = e.touches[0]!;
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+        } else if (e instanceof MouseEvent) {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        } else {
+            return;
+        }
         
         // Send coordinates to server for deletion
         this.dbConnection.reducers.deleteAtCoordinates(x, y);
@@ -177,9 +188,11 @@ export class GameSetupTab {
     
     private setupDeleteListener() {
         this.canvas.addEventListener('click', this.deleteListener);
+        this.canvas.addEventListener('touchstart', this.deleteListener, { passive: false });
     }
     
     private removeDeleteListener() {
         this.canvas.removeEventListener('click', this.deleteListener);
+        this.canvas.removeEventListener('touchstart', this.deleteListener);
     }
 } 
