@@ -4,6 +4,7 @@ export class GameSetupTab {
     private container: HTMLDivElement;
     private dbConnection: DbConnection;
     private deleteMode: boolean = false;
+    private deleteOneMode: boolean = false;
     private canvas: HTMLCanvasElement;
 
     constructor(container: HTMLDivElement, dbConnection: DbConnection, canvas: HTMLCanvasElement) {
@@ -138,34 +139,103 @@ export class GameSetupTab {
         
         this.container.appendChild(setupContainer);
 
-        // Create delete button
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Delete Mode';
-        deleteButton.style.marginTop = '20px';
-        deleteButton.style.padding = '8px 16px';
-        deleteButton.style.backgroundColor = '#ccc';
-        deleteButton.style.border = 'none';
-        deleteButton.style.borderRadius = '5px';
-        deleteButton.style.cursor = 'pointer';
+        // Create button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'grid';
+        buttonContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        buttonContainer.style.gap = '20px';
+        buttonContainer.style.marginTop = '20px';
         
-        deleteButton.addEventListener('click', () => {
-            this.deleteMode = !this.deleteMode;
-            deleteButton.style.backgroundColor = this.deleteMode ? '#ff6b6b' : '#ccc';
-            
-            if (this.deleteMode) {
+        // Create delete one button
+        const deleteOneButton = document.createElement('button');
+        deleteOneButton.textContent = 'Delete One';
+        deleteOneButton.style.padding = '8px 16px';
+        deleteOneButton.style.backgroundColor = '#ccc';
+        deleteOneButton.style.border = 'none';
+        deleteOneButton.style.borderRadius = '5px';
+        deleteOneButton.style.cursor = 'pointer';
+        
+        // Create delete multiple button
+        const deleteMultipleButton = document.createElement('button');
+        deleteMultipleButton.textContent = 'Delete Multiple';
+        deleteMultipleButton.style.padding = '8px 16px';
+        deleteMultipleButton.style.backgroundColor = '#ccc';
+        deleteMultipleButton.style.border = 'none';
+        deleteMultipleButton.style.borderRadius = '5px';
+        deleteMultipleButton.style.cursor = 'pointer';
+        
+        // Create clear button
+        const clearButton = document.createElement('button');
+        clearButton.textContent = 'Clear All';
+        clearButton.style.padding = '8px 16px';
+        clearButton.style.backgroundColor = '#ff4444';
+        clearButton.style.color = 'white';
+        clearButton.style.border = 'none';
+        clearButton.style.borderRadius = '5px';
+        clearButton.style.cursor = 'pointer';
+        
+        // Add event listeners
+        deleteOneButton.addEventListener('click', () => {
+            if (this.deleteOneMode) {
+                // If already in delete one mode, turn it off
+                this.deleteOneMode = false;
+                this.deleteMode = false;
+                deleteOneButton.style.backgroundColor = '#ccc';
+                deleteMultipleButton.style.backgroundColor = '#ccc';
+                this.canvas.style.cursor = 'default';
+                this.removeDeleteListener();
+            } else {
+                // Turn on delete one mode
+                this.deleteOneMode = true;
+                this.deleteMode = false;
+                deleteOneButton.style.backgroundColor = '#ff6b6b';
+                deleteMultipleButton.style.backgroundColor = '#ccc';
                 this.canvas.style.cursor = 'crosshair';
                 this.setupDeleteListener();
+            }
+        });
+        
+        deleteMultipleButton.addEventListener('click', () => {
+            if (this.deleteMode) {
+                // If already in delete multiple mode, turn it off
+                this.deleteMode = false;
+                this.deleteOneMode = false;
+                deleteMultipleButton.style.backgroundColor = '#ccc';
+                deleteOneButton.style.backgroundColor = '#ccc';
+                this.canvas.style.cursor = 'default';
+                this.removeDeleteListener();
             } else {
+                // Turn on delete multiple mode
+                this.deleteMode = true;
+                this.deleteOneMode = false;
+                deleteMultipleButton.style.backgroundColor = '#ff6b6b';
+                deleteOneButton.style.backgroundColor = '#ccc';
+                this.canvas.style.cursor = 'crosshair';
+                this.setupDeleteListener();
+            }
+        });
+        
+        clearButton.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete all objects? This action cannot be undone.')) {
+                this.dbConnection.reducers.deleteAll();
+                // Reset delete modes
+                this.deleteMode = false;
+                this.deleteOneMode = false;
+                deleteOneButton.style.backgroundColor = '#ccc';
+                deleteMultipleButton.style.backgroundColor = '#ccc';
                 this.canvas.style.cursor = 'default';
                 this.removeDeleteListener();
             }
         });
         
-        this.container.appendChild(deleteButton);
+        buttonContainer.appendChild(deleteOneButton);
+        buttonContainer.appendChild(deleteMultipleButton);
+        buttonContainer.appendChild(clearButton);
+        this.container.appendChild(buttonContainer);
     }
 
     private deleteListener = (e: MouseEvent | TouchEvent) => {
-        if (!this.deleteMode) return;
+        if (!this.deleteMode && !this.deleteOneMode) return;
         
         const rect = this.canvas.getBoundingClientRect();
         let x: number;
@@ -184,6 +254,18 @@ export class GameSetupTab {
         
         // Send coordinates to server for deletion
         this.dbConnection.reducers.deleteAtCoordinates(x, y);
+        
+        // If in delete one mode, turn it off after one deletion
+        if (this.deleteOneMode) {
+            this.deleteOneMode = false;
+            this.canvas.style.cursor = 'default';
+            this.removeDeleteListener();
+            // Reset the delete one button color
+            const deleteOneButton = this.container.querySelector('button:nth-child(1)') as HTMLButtonElement;
+            if (deleteOneButton) {
+                deleteOneButton.style.backgroundColor = '#ccc';
+            }
+        }
     };
     
     private setupDeleteListener() {

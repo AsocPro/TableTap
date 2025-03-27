@@ -218,3 +218,21 @@ pub fn delete_at_coordinates(ctx: &ReducerContext, x: i32, y: i32) {
         }
     }
 }
+
+#[spacetimedb::reducer]
+pub fn delete_all(ctx: &ReducerContext) {
+    // Delete all units
+    for unit in ctx.db.unit().iter() {
+        ctx.db.unit().id().delete(unit.id);
+    }
+    
+    // Delete all obstacles
+    for obstacle in ctx.db.obstacle().iter() {
+        ctx.db.obstacle().id().delete(obstacle.id);
+    }
+    
+    // Delete all terrain
+    for terrain in ctx.db.terrain().iter() {
+        ctx.db.terrain().id().delete(terrain.id);
+    }
+}
