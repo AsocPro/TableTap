@@ -41,6 +41,8 @@ import { AddTerrain } from "./add_terrain_reducer.ts";
 export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
 export { AddUnit };
+import { DeleteAtCoordinates } from "./delete_at_coordinates_reducer.ts";
+export { DeleteAtCoordinates };
 import { DeleteObstacle } from "./delete_obstacle_reducer.ts";
 export { DeleteObstacle };
 import { DeleteTerrain } from "./delete_terrain_reducer.ts";
@@ -101,6 +103,10 @@ const REMOTE_MODULE = {
       reducerName: "add_unit",
       argsType: AddUnit.getTypeScriptAlgebraicType(),
     },
+    delete_at_coordinates: {
+      reducerName: "delete_at_coordinates",
+      argsType: DeleteAtCoordinates.getTypeScriptAlgebraicType(),
+    },
     delete_obstacle: {
       reducerName: "delete_obstacle",
       argsType: DeleteObstacle.getTypeScriptAlgebraicType(),
@@ -155,6 +161,7 @@ export type Reducer = never
 | { name: "AddObstacle", args: AddObstacle }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
+| { name: "DeleteAtCoordinates", args: DeleteAtCoordinates }
 | { name: "DeleteObstacle", args: DeleteObstacle }
 | { name: "DeleteTerrain", args: DeleteTerrain }
 | { name: "DeleteUnit", args: DeleteUnit }
@@ -212,6 +219,22 @@ export class RemoteReducers {
 
   removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
     this.connection.offReducer("add_unit", callback);
+  }
+
+  deleteAtCoordinates(x: number, y: number) {
+    const __args = { x, y };
+    let __writer = new BinaryWriter(1024);
+    DeleteAtCoordinates.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_at_coordinates", __argsBuffer, this.setCallReducerFlags.deleteAtCoordinatesFlags);
+  }
+
+  onDeleteAtCoordinates(callback: (ctx: ReducerEventContext, x: number, y: number) => void) {
+    this.connection.onReducer("delete_at_coordinates", callback);
+  }
+
+  removeOnDeleteAtCoordinates(callback: (ctx: ReducerEventContext, x: number, y: number) => void) {
+    this.connection.offReducer("delete_at_coordinates", callback);
   }
 
   deleteObstacle(obstacleId: bigint) {
@@ -310,6 +333,11 @@ export class SetReducerFlags {
   addUnitFlags: CallReducerFlags = 'FullUpdate';
   addUnit(flags: CallReducerFlags) {
     this.addUnitFlags = flags;
+  }
+
+  deleteAtCoordinatesFlags: CallReducerFlags = 'FullUpdate';
+  deleteAtCoordinates(flags: CallReducerFlags) {
+    this.deleteAtCoordinatesFlags = flags;
   }
 
   deleteObstacleFlags: CallReducerFlags = 'FullUpdate';
