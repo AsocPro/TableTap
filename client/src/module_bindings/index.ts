@@ -41,6 +41,8 @@ import { AddTerrain } from "./add_terrain_reducer.ts";
 export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
 export { AddUnit };
+import { DeleteAll } from "./delete_all_reducer.ts";
+export { DeleteAll };
 import { DeleteAtCoordinates } from "./delete_at_coordinates_reducer.ts";
 export { DeleteAtCoordinates };
 import { DeleteObstacle } from "./delete_obstacle_reducer.ts";
@@ -103,6 +105,10 @@ const REMOTE_MODULE = {
       reducerName: "add_unit",
       argsType: AddUnit.getTypeScriptAlgebraicType(),
     },
+    delete_all: {
+      reducerName: "delete_all",
+      argsType: DeleteAll.getTypeScriptAlgebraicType(),
+    },
     delete_at_coordinates: {
       reducerName: "delete_at_coordinates",
       argsType: DeleteAtCoordinates.getTypeScriptAlgebraicType(),
@@ -161,6 +167,7 @@ export type Reducer = never
 | { name: "AddObstacle", args: AddObstacle }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
+| { name: "DeleteAll", args: DeleteAll }
 | { name: "DeleteAtCoordinates", args: DeleteAtCoordinates }
 | { name: "DeleteObstacle", args: DeleteObstacle }
 | { name: "DeleteTerrain", args: DeleteTerrain }
@@ -219,6 +226,18 @@ export class RemoteReducers {
 
   removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
     this.connection.offReducer("add_unit", callback);
+  }
+
+  deleteAll() {
+    this.connection.callReducer("delete_all", new Uint8Array(0), this.setCallReducerFlags.deleteAllFlags);
+  }
+
+  onDeleteAll(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("delete_all", callback);
+  }
+
+  removeOnDeleteAll(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("delete_all", callback);
   }
 
   deleteAtCoordinates(x: number, y: number) {
@@ -333,6 +352,11 @@ export class SetReducerFlags {
   addUnitFlags: CallReducerFlags = 'FullUpdate';
   addUnit(flags: CallReducerFlags) {
     this.addUnitFlags = flags;
+  }
+
+  deleteAllFlags: CallReducerFlags = 'FullUpdate';
+  deleteAll(flags: CallReducerFlags) {
+    this.deleteAllFlags = flags;
   }
 
   deleteAtCoordinatesFlags: CallReducerFlags = 'FullUpdate';
