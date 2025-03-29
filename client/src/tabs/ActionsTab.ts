@@ -25,19 +25,22 @@ export class ActionsTab {
         rollButton.style.borderRadius = '4px';
         rollButton.style.cursor = 'pointer';
         
+        rollButton.addEventListener('click', () => {
+            // Server-side reducer is roll_dice but TypeScript binding might have converted it to camelCase
+            this.dbConnection.reducers.rollDice();
+        });
+        
+        actionsContainer.appendChild(rollButton);
+        this.container.appendChild(actionsContainer);
+        
+        // Add result display
         const resultDisplay = document.createElement('div');
         resultDisplay.style.marginTop = '10px';
         resultDisplay.style.padding = '10px';
         resultDisplay.style.backgroundColor = '#fff';
         resultDisplay.style.borderRadius = '4px';
+        resultDisplay.textContent = 'Roll the dice to see results in the Action Log';
         
-        rollButton.addEventListener('click', () => {
-            const result = Math.floor(Math.random() * 6) + 1;
-            resultDisplay.textContent = `Dice Roll Result: ${result}`;
-        });
-        
-        actionsContainer.appendChild(rollButton);
         actionsContainer.appendChild(resultDisplay);
-        this.container.appendChild(actionsContainer);
     }
 } 

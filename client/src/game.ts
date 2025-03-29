@@ -6,6 +6,7 @@ import type { EventContext, Unit, Terrain, Obstacle } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
+import { ActionLog } from './components/ActionLog';
 
 export class Game {
     private canvasContainer: HTMLDivElement;
@@ -30,15 +31,15 @@ export class Game {
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
             .withUri('ws://192.168.1.222:3000')
-            .withModuleName('tabletap')
-            .onConnect((dbConnection, identity, token) => {
-                dbConnection.subscriptionBuilder()
-                    .onApplied((ctx) => {
-                        console.log("Subscription applied");
-                    })
-                    .subscribe(["SELECT * FROM unit", "SELECT * FROM obstacle", "SELECT * FROM terrain"]);
-            })
-            .build();
+  .withModuleName('tabletap')
+  .onConnect((dbConnection, identity, token) => {
+	dbConnection.subscriptionBuilder()
+            .onApplied((ctx) => {
+                 console.log("Subscription applied");
+              })
+                    .subscribe(["SELECT * FROM unit", "SELECT * FROM obstacle", "SELECT * FROM terrain", "SELECT * FROM action"]);
+  })
+  .build();
 
         // Get the existing canvas and replace it with a container for multiple canvases
         const existingCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -73,7 +74,7 @@ export class Game {
             overlay: this.canvasLayers.overlay.getContext('2d')!
         };
         
-        this.units = new Map([]);
+	this.units = new Map([]);
         this.obstacles = new Map([]);
         this.terrain = new Map([]);
         
@@ -158,13 +159,48 @@ export class Game {
     }
     
     private createUI() {
-        // Create container for the UI
-        const uiContainer = document.createElement('div');
-        uiContainer.style.width = '600px';
-        uiContainer.style.margin = '10px auto';
-        uiContainer.style.padding = '10px';
-        uiContainer.style.backgroundColor = '#f0f0f0';
-        uiContainer.style.borderRadius = '5px';
+        // Store a reference to the parent before we detach the canvas container
+        const canvasParent = this.canvasContainer.parentElement;
+        
+        // Create the main layout container
+        const mainContainer = document.createElement('div');
+        mainContainer.style.margin = '0 auto';
+        mainContainer.style.maxWidth = '1200px';
+        
+        // Create a top section container for canvas and log side by side
+        const topSection = document.createElement('div');
+        topSection.style.display = 'flex';
+        topSection.style.marginBottom = '20px';
+        
+        // Detach canvas container from its current parent before adding it to the new parent
+        if (this.canvasContainer.parentElement) {
+            this.canvasContainer.parentElement.removeChild(this.canvasContainer);
+        }
+        
+        // 1. Left section (canvas)
+        const canvasSection = document.createElement('div');
+        canvasSection.style.flex = '0 0 600px';
+        canvasSection.appendChild(this.canvasContainer);
+        
+        // 2. Right section (action log)
+        const logSection = document.createElement('div');
+        logSection.style.flex = '0 0 250px';
+        logSection.style.height = '400px'; // Match canvas height
+        logSection.style.margin = '0 0 0 20px';
+        
+        // Initialize the action log
+        new ActionLog(logSection, this.dbConnection);
+        
+        // Add canvas and log to top section
+        topSection.appendChild(canvasSection);
+        topSection.appendChild(logSection);
+        
+        // 3. Bottom section (UI tabs)
+        const uiSection = document.createElement('div');
+        uiSection.style.width = '600px'; // Match canvas width
+        uiSection.style.padding = '10px';
+        uiSection.style.backgroundColor = '#f0f0f0';
+        uiSection.style.borderRadius = '5px';
         
         // Create tabs for different sections
         const tabContainer = document.createElement('div');
@@ -214,15 +250,18 @@ export class Game {
             }
         });
         
-        uiContainer.appendChild(tabContainer);
-        contentPanels.forEach(panel => uiContainer.appendChild(panel));
+        uiSection.appendChild(tabContainer);
+        contentPanels.forEach(panel => uiSection.appendChild(panel));
         
-        // Append UI to the document
-        const canvasParent = this.canvasContainer.parentElement;
+        // Assemble the layout - top section first, then tabs below
+        mainContainer.appendChild(topSection);
+        mainContainer.appendChild(uiSection);
+        
+        // Add the main container to the parent
         if (canvasParent) {
-            canvasParent.insertBefore(uiContainer, this.canvasContainer.nextSibling);
+            canvasParent.appendChild(mainContainer);
         } else {
-            document.body.appendChild(uiContainer);
+            document.body.appendChild(mainContainer);
         }
     }
 }
