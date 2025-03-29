@@ -57,8 +57,12 @@ import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
 import { MoveUnit } from "./move_unit_reducer.ts";
 export { MoveUnit };
+import { RollDice } from "./roll_dice_reducer.ts";
+export { RollDice };
 
 // Import and reexport all table handle types
+import { ActionTableHandle } from "./action_table.ts";
+export { ActionTableHandle };
 import { ObstacleTableHandle } from "./obstacle_table.ts";
 export { ObstacleTableHandle };
 import { TerrainTableHandle } from "./terrain_table.ts";
@@ -67,6 +71,8 @@ import { UnitTableHandle } from "./unit_table.ts";
 export { UnitTableHandle };
 
 // Import and reexport all types
+import { Action } from "./action_type.ts";
+export { Action };
 import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
 import { Terrain } from "./terrain_type.ts";
@@ -76,6 +82,11 @@ export { Unit };
 
 const REMOTE_MODULE = {
   tables: {
+    action: {
+      tableName: "action",
+      rowType: Action.getTypeScriptAlgebraicType(),
+      primaryKey: "timestamp",
+    },
     obstacle: {
       tableName: "obstacle",
       rowType: Obstacle.getTypeScriptAlgebraicType(),
@@ -137,6 +148,10 @@ const REMOTE_MODULE = {
       reducerName: "move_unit",
       argsType: MoveUnit.getTypeScriptAlgebraicType(),
     },
+    roll_dice: {
+      reducerName: "roll_dice",
+      argsType: RollDice.getTypeScriptAlgebraicType(),
+    },
   },
   // Constructors which are used by the DbConnectionImpl to
   // extract type information from the generated RemoteModule.
@@ -175,6 +190,7 @@ export type Reducer = never
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "MoveUnit", args: MoveUnit }
+| { name: "RollDice", args: RollDice }
 ;
 
 export class RemoteReducers {
@@ -336,6 +352,18 @@ export class RemoteReducers {
     this.connection.offReducer("move_unit", callback);
   }
 
+  rollDice() {
+    this.connection.callReducer("roll_dice", new Uint8Array(0), this.setCallReducerFlags.rollDiceFlags);
+  }
+
+  onRollDice(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("roll_dice", callback);
+  }
+
+  removeOnRollDice(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("roll_dice", callback);
+  }
+
 }
 
 export class SetReducerFlags {
@@ -384,10 +412,19 @@ export class SetReducerFlags {
     this.moveUnitFlags = flags;
   }
 
+  rollDiceFlags: CallReducerFlags = 'FullUpdate';
+  rollDice(flags: CallReducerFlags) {
+    this.rollDiceFlags = flags;
+  }
+
 }
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
+
+  get action(): ActionTableHandle {
+    return new ActionTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.action));
+  }
 
   get obstacle(): ObstacleTableHandle {
     return new ObstacleTableHandle(this.connection.clientCache.getOrCreateTable<Obstacle>(REMOTE_MODULE.tables.obstacle));
