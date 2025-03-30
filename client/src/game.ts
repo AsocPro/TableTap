@@ -1,4 +1,3 @@
-import { rollD6 } from "./dice";
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
@@ -154,10 +153,6 @@ export class Game {
         requestAnimationFrame(() => this.update());
     }
 
-    rollDice(): number {
-        return rollD6();
-    }
-    
     private createUI() {
         // Store a reference to the parent before we detach the canvas container
         const canvasParent = this.canvasContainer.parentElement;
