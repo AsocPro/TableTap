@@ -36,7 +36,6 @@ import type {
 export type Action = {
   timestamp: Timestamp,
   actionType: string,
-  value: number,
   description: string,
 };
 
@@ -52,7 +51,6 @@ export namespace Action {
     return AlgebraicType.createProductType([
       new ProductTypeElement("timestamp", AlgebraicType.createTimestampType()),
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
-      new ProductTypeElement("value", AlgebraicType.createI32Type()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
     ]);
   }

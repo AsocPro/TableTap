@@ -261,6 +261,6 @@ pub fn roll_dice(ctx: &ReducerContext) {
     ctx.db.action().insert(Action {
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
-        description,
+        description: description
     });
 }
