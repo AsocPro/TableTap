@@ -62,7 +62,6 @@ export class ActionLog {
     }
     
     private addLogEntry(action: any) {
-        const timestamp = Number(action.timestamp);
         
         // Create log entry element
         const logEntry = document.createElement('div');
@@ -71,19 +70,13 @@ export class ActionLog {
         logEntry.style.borderBottom = '1px solid #eee';
         
         // Format timestamp
-        const date = new Date(timestamp / 1000000); // Convert nanoseconds to milliseconds
-        const formattedTime = date.toLocaleTimeString();
+        const date =  Date(action.timestamp); // Convert nanoseconds to milliseconds
+        const formattedTime = date.toLocaleString();
         
         // Create content based on action type
         let content = '';
-        switch (action.action_type) {
-            case 'DICE_ROLL':
-                logEntry.style.backgroundColor = '#e6f7ff';
-                content = `<strong>🎲 Dice Roll:</strong> ${action.value} - ${action.description}`;
-                break;
-            default:
-                content = `<strong>${action.action_type}:</strong> ${action.description}`;
-        }
+        logEntry.style.backgroundColor = '#e6f7ff';
+        content = `<strong>${action.description}</strong>`;
         
         logEntry.innerHTML = `<div><span style="color: #666;">[${formattedTime}]</span> ${content}</div>`;
         
@@ -95,7 +88,7 @@ export class ActionLog {
         }
         
         // Store in map
-        this.logEntries.set(timestamp, logEntry);
+        this.logEntries.set(action.timestamp, logEntry);
         
         // Limit entries to keep performance good
         if (this.logEntries.size > 100) {

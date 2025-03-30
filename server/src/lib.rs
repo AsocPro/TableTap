@@ -37,7 +37,6 @@ pub struct Action {
     #[primary_key]
     timestamp: Timestamp,
     action_type: String,
-    value: i32,
     description: String
 }
 
@@ -256,13 +255,12 @@ pub fn roll_dice(ctx: &ReducerContext) {
     let dice_value = rng.gen_range(1..=6);
     
     // Create a description
-    let description = format!("Rolled a {}", dice_value);
+    let description = format!("🎲 Dice Roll: {}", dice_value);
     
     // Add to actions table
     ctx.db.action().insert(Action {
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
-        value: dice_value as i32,
         description,
     });
 }
