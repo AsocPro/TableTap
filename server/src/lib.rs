@@ -37,7 +37,19 @@ pub struct Action {
     #[primary_key]
     timestamp: Timestamp,
     action_type: String,
-    description: String
+    description: String,
+    game_state_id: Option<Timestamp>  // Reference to GameState
+}
+
+#[spacetimedb::table(name = game_state, public)]
+pub struct GameState {
+    #[primary_key]
+    id: Timestamp,
+    terrains: Vec<Terrain>,
+    units: Vec<Unit>,
+    obstacles: Vec<Obstacle>,
+    created_at: Timestamp,
+    updated_at: Timestamp
 }
 
 #[spacetimedb::reducer(init)]
@@ -249,7 +261,6 @@ pub fn delete_all(ctx: &ReducerContext) {
 
 #[spacetimedb::reducer]
 pub fn roll_dice(ctx: &ReducerContext) {
-
     // Generate a random number between 1 and 6
     let mut rng = ctx.rng();
     let dice_value = rng.gen_range(1..=6);
@@ -257,10 +268,24 @@ pub fn roll_dice(ctx: &ReducerContext) {
     // Create a description
     let description = format!("🎲 Dice Roll: {}", dice_value);
     
-    // Add to actions table
+    // Create a new game state with current units, obstacles, and terrain
+    let game_state = GameState {
+        id: ctx.timestamp,  // Use timestamp as ID for uniqueness
+        units: ctx.db.unit().iter().collect(),
+        obstacles: ctx.db.obstacle().iter().collect(),
+        terrains: ctx.db.terrain().iter().collect(),
+        created_at: ctx.timestamp,
+        updated_at: ctx.timestamp
+    };
+    
+    // Insert the game state
+    ctx.db.game_state().insert(game_state);
+    
+    // Add to actions table with reference to the game state
     ctx.db.action().insert(Action {
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
-        description: description
+        description: description,
+        game_state_id: Some(ctx.timestamp)
     });
 }
