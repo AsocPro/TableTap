@@ -133,7 +133,7 @@ export class ActionLog {
                 if (action.units || action.terrains || action.obstacles) {
                     // Make the entry clickable to show this game state
                     logEntry.addEventListener('click', () => {
-                        this.activateGameState(action.timestamp.toString(), logEntry);
+                        this.activateGameState(action.timestamp, logEntry);
                     });
                     
                     // Add visual indicator that it's clickable
@@ -195,7 +195,7 @@ export class ActionLog {
         this.activeEntry = logEntry;
         
         // Tell the game to use this game state
-        this.gameInstance.drawFromGameState(gameStateId.toString());
+        this.gameInstance.drawFromGameState(gameStateId);
     }
     
     private resetView() {

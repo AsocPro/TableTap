@@ -29,7 +29,7 @@ export class Game {
     private selectedGameState: GameState | null = null;
     private gameStates: Map<string, GameState> = new Map();
     private selectedAction: any = null;
-    private actionStates: Map<string, any> = new Map();
+    private actionStates: Map<Timestamp, any> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -138,8 +138,7 @@ export class Game {
         const actionCallback = (_ctx: EventContext, action: any) => {
             // If the action has state data (units, terrains, obstacles)
             if (action.units || action.terrains || action.obstacles) {
-                const actionId = action.timestamp.toString();
-                this.actionStates.set(actionId, action);
+                this.actionStates.set(action.timestamp, action);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);
