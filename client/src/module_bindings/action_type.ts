@@ -37,6 +37,7 @@ export type Action = {
   timestamp: Timestamp,
   actionType: string,
   description: string,
+  gameStateId: Timestamp | undefined,
 };
 
 /**
@@ -52,6 +53,7 @@ export namespace Action {
       new ProductTypeElement("timestamp", AlgebraicType.createTimestampType()),
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
+      new ProductTypeElement("gameStateId", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
     ]);
   }
 
