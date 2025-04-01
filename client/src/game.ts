@@ -1,7 +1,7 @@
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
-import type { EventContext, Unit, Terrain, Obstacle } from './module_bindings';
+import type { EventContext, Unit, Terrain, Obstacle, GameState } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
@@ -26,19 +26,27 @@ export class Game {
     private terrain: Map<number, Terrain>;
     private renderer: Renderer;
     private dbConnection: DbConnection;
+    private selectedGameState: GameState | null = null;
+    private gameStates: Map<string, GameState> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
             .withUri('ws://192.168.1.222:3000')
-  .withModuleName('tabletap')
-  .onConnect((dbConnection, identity, token) => {
-	dbConnection.subscriptionBuilder()
-            .onApplied((ctx) => {
-                 console.log("Subscription applied");
-              })
-                    .subscribe(["SELECT * FROM unit", "SELECT * FROM obstacle", "SELECT * FROM terrain", "SELECT * FROM action"]);
-  })
-  .build();
+            .withModuleName('tabletap')
+            .onConnect((dbConnection, identity, token) => {
+                dbConnection.subscriptionBuilder()
+                    .onApplied((ctx) => {
+                        console.log("Subscription applied");
+                    })
+                    .subscribe([
+                        "SELECT * FROM unit", 
+                        "SELECT * FROM obstacle", 
+                        "SELECT * FROM terrain", 
+                        "SELECT * FROM action",
+                        "SELECT * FROM game_state"
+                    ]);
+            })
+            .build();
 
         // Get the existing canvas and replace it with a container for multiple canvases
         const existingCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -125,6 +133,13 @@ export class Game {
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
+        // Handle game state data
+        const gameStateCallback = (_ctx: EventContext, gameState: GameState) => {
+            const stateId = gameState.id.toString();
+            this.gameStates.set(stateId, gameState);
+        }
+        this.dbConnection.db.gameState.onInsert(gameStateCallback);
+        
         this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain);
         handleInput(this.dbConnection, this.canvasLayers.overlay, this.units);
         
@@ -149,7 +164,13 @@ export class Game {
     }
 
     update() {
-        this.renderer.draw();
+        if (this.selectedGameState) {
+            // Draw from selected game state
+            this.renderer.drawFromGameState(this.selectedGameState);
+        } else {
+            // Draw from live data
+            this.renderer.draw();
+        }
         requestAnimationFrame(() => this.update());
     }
 
@@ -183,8 +204,8 @@ export class Game {
         logSection.style.height = '400px'; // Match canvas height
         logSection.style.margin = '0 0 0 20px';
         
-        // Initialize the action log
-        new ActionLog(logSection, this.dbConnection);
+        // Initialize the action log with a reference to the game instance
+        new ActionLog(logSection, this.dbConnection, this);
         
         // Add canvas and log to top section
         topSection.appendChild(canvasSection);
@@ -257,6 +278,22 @@ export class Game {
             canvasParent.appendChild(mainContainer);
         } else {
             document.body.appendChild(mainContainer);
+        }
+    }
+
+    // Draw from a specific game state instead of live data
+    public drawFromGameState(gameStateId: string | null) {
+        if (gameStateId === null) {
+            // Reset to live data
+            this.selectedGameState = null;
+            return;
+        }
+        
+        const gameState = this.gameStates.get(gameStateId);
+        if (gameState) {
+            this.selectedGameState = gameState;
+        } else {
+            console.error(`GameState with ID ${gameStateId} not found`);
         }
     }
 }
