@@ -1,5 +1,6 @@
 import { DbConnection } from '../module_bindings';
 import { Game } from '../game';
+import type { Timestamp } from '@clockworklabs/spacetimedb-sdk';
 
 export class ActionLog {
     private container: HTMLDivElement;
@@ -128,11 +129,11 @@ export class ActionLog {
                 
                 logEntry.innerHTML = `<div><span style="color: #666;">[${formattedTime}]</span> ${content}</div>`;
                 
-                // Store game state ID if it exists
-                if (action.gameStateId) {
+                // Check if this action has embedded game state data
+                if (action.units || action.terrains || action.obstacles) {
                     // Make the entry clickable to show this game state
                     logEntry.addEventListener('click', () => {
-                        this.activateGameState(action.gameStateId, logEntry);
+                        this.activateGameState(action.timestamp.toString(), logEntry);
                     });
                     
                     // Add visual indicator that it's clickable

@@ -55,6 +55,32 @@ export class Renderer {
         }
     }
 
+    // Draw from a specific action with embedded state data
+    drawFromActionState(action: any) {
+        this.clearCanvases();
+        
+        // Draw terrain from action state
+        if (action.terrains && Array.isArray(action.terrains)) {
+            for (const terrain of action.terrains) {
+                this.drawTerrainItem(terrain);
+            }
+        }
+        
+        // Draw obstacles from action state
+        if (action.obstacles && Array.isArray(action.obstacles)) {
+            for (const obstacle of action.obstacles) {
+                this.drawObstacleItem(obstacle);
+            }
+        }
+        
+        // Draw units from action state
+        if (action.units && Array.isArray(action.units)) {
+            for (const unit of action.units) {
+                this.drawUnitItem(unit);
+            }
+        }
+    }
+
     private clearCanvases() {
         const { underlay, terrain, units, overlay } = this.contexts;
         

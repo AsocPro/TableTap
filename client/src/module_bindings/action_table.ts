@@ -34,6 +34,10 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Action } from "./action_type";
+import { Terrain as __Terrain } from "./terrain_type";
+import { Unit as __Unit } from "./unit_type";
+import { Obstacle as __Obstacle } from "./obstacle_type";
+
 import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**

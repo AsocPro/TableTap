@@ -63,8 +63,6 @@ export { RollDice };
 // Import and reexport all table handle types
 import { ActionTableHandle } from "./action_table.ts";
 export { ActionTableHandle };
-import { GameStateTableHandle } from "./game_state_table.ts";
-export { GameStateTableHandle };
 import { ObstacleTableHandle } from "./obstacle_table.ts";
 export { ObstacleTableHandle };
 import { TerrainTableHandle } from "./terrain_table.ts";
@@ -75,8 +73,6 @@ export { UnitTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
-import { GameState } from "./game_state_type.ts";
-export { GameState };
 import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
 import { Terrain } from "./terrain_type.ts";
@@ -90,11 +86,6 @@ const REMOTE_MODULE = {
       tableName: "action",
       rowType: Action.getTypeScriptAlgebraicType(),
       primaryKey: "timestamp",
-    },
-    game_state: {
-      tableName: "game_state",
-      rowType: GameState.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
     },
     obstacle: {
       tableName: "obstacle",
@@ -433,10 +424,6 @@ export class RemoteTables {
 
   get action(): ActionTableHandle {
     return new ActionTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.action));
-  }
-
-  get gameState(): GameStateTableHandle {
-    return new GameStateTableHandle(this.connection.clientCache.getOrCreateTable<GameState>(REMOTE_MODULE.tables.game_state));
   }
 
   get obstacle(): ObstacleTableHandle {

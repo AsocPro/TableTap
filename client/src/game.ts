@@ -28,6 +28,8 @@ export class Game {
     private dbConnection: DbConnection;
     private selectedGameState: GameState | null = null;
     private gameStates: Map<string, GameState> = new Map();
+    private selectedAction: any = null;
+    private actionStates: Map<string, any> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -42,8 +44,7 @@ export class Game {
                         "SELECT * FROM unit", 
                         "SELECT * FROM obstacle", 
                         "SELECT * FROM terrain", 
-                        "SELECT * FROM action",
-                        "SELECT * FROM game_state"
+                        "SELECT * FROM action"
                     ]);
             })
             .build();
@@ -133,12 +134,15 @@ export class Game {
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
-        // Handle game state data
-        const gameStateCallback = (_ctx: EventContext, gameState: GameState) => {
-            const stateId = gameState.id.toString();
-            this.gameStates.set(stateId, gameState);
+        // Handle action data to extract game states
+        const actionCallback = (_ctx: EventContext, action: any) => {
+            // If the action has state data (units, terrains, obstacles)
+            if (action.units || action.terrains || action.obstacles) {
+                const actionId = action.timestamp.toString();
+                this.actionStates.set(actionId, action);
+            }
         }
-        this.dbConnection.db.gameState.onInsert(gameStateCallback);
+        this.dbConnection.db.action.onInsert(actionCallback);
         
         this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain);
         handleInput(this.dbConnection, this.canvasLayers.overlay, this.units);
@@ -164,9 +168,9 @@ export class Game {
     }
 
     update() {
-        if (this.selectedGameState) {
-            // Draw from selected game state
-            this.renderer.drawFromGameState(this.selectedGameState);
+        if (this.selectedAction) {
+            // Draw from selected action state
+            this.renderer.drawFromActionState(this.selectedAction);
         } else {
             // Draw from live data
             this.renderer.draw();
@@ -281,19 +285,19 @@ export class Game {
         }
     }
 
-    // Draw from a specific game state instead of live data
-    public drawFromGameState(gameStateId: string | null) {
-        if (gameStateId === null) {
+    // Draw from a specific action state instead of live data
+    public drawFromGameState(actionId: string | null) {
+        if (actionId === null) {
             // Reset to live data
-            this.selectedGameState = null;
+            this.selectedAction = null;
             return;
         }
         
-        const gameState = this.gameStates.get(gameStateId);
-        if (gameState) {
-            this.selectedGameState = gameState;
+        const action = this.actionStates.get(actionId);
+        if (action) {
+            this.selectedAction = action;
         } else {
-            console.error(`GameState with ID ${gameStateId} not found`);
+            console.error(`Action with ID ${actionId} not found`);
         }
     }
 }

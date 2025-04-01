@@ -23,6 +23,9 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
+import { Terrain as __Terrain } from "./terrain_type";
+import { Unit as __Unit } from "./unit_type";
+import { Obstacle as __Obstacle } from "./obstacle_type";
 
 import type {
   CallReducerFlags,
@@ -37,7 +40,11 @@ export type Action = {
   timestamp: Timestamp,
   actionType: string,
   description: string,
-  gameStateId: Timestamp | undefined,
+  terrains: __Terrain[] | undefined,
+  units: __Unit[] | undefined,
+  obstacles: __Obstacle[] | undefined,
+  createdAt: Timestamp | undefined,
+  updatedAt: Timestamp | undefined,
 };
 
 /**
@@ -53,7 +60,11 @@ export namespace Action {
       new ProductTypeElement("timestamp", AlgebraicType.createTimestampType()),
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
-      new ProductTypeElement("gameStateId", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
+      new ProductTypeElement("terrains", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Terrain.getTypeScriptAlgebraicType()))),
+      new ProductTypeElement("units", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Unit.getTypeScriptAlgebraicType()))),
+      new ProductTypeElement("obstacles", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Obstacle.getTypeScriptAlgebraicType()))),
+      new ProductTypeElement("createdAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
+      new ProductTypeElement("updatedAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
     ]);
   }
 

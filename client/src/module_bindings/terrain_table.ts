@@ -34,7 +34,6 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Terrain } from "./terrain_type";
-import {  RemoteReducers, RemoteTables } from ".";
 import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
