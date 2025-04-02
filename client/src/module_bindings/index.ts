@@ -41,6 +41,8 @@ import { AddTerrain } from "./add_terrain_reducer.ts";
 export { AddTerrain };
 import { AddUnit } from "./add_unit_reducer.ts";
 export { AddUnit };
+import { ChatMessage } from "./chat_message_reducer.ts";
+export { ChatMessage };
 import { DeleteAll } from "./delete_all_reducer.ts";
 export { DeleteAll };
 import { DeleteAtCoordinates } from "./delete_at_coordinates_reducer.ts";
@@ -116,6 +118,10 @@ const REMOTE_MODULE = {
       reducerName: "add_unit",
       argsType: AddUnit.getTypeScriptAlgebraicType(),
     },
+    chat_message: {
+      reducerName: "chat_message",
+      argsType: ChatMessage.getTypeScriptAlgebraicType(),
+    },
     delete_all: {
       reducerName: "delete_all",
       argsType: DeleteAll.getTypeScriptAlgebraicType(),
@@ -182,6 +188,7 @@ export type Reducer = never
 | { name: "AddObstacle", args: AddObstacle }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnit", args: AddUnit }
+| { name: "ChatMessage", args: ChatMessage }
 | { name: "DeleteAll", args: DeleteAll }
 | { name: "DeleteAtCoordinates", args: DeleteAtCoordinates }
 | { name: "DeleteObstacle", args: DeleteObstacle }
@@ -242,6 +249,22 @@ export class RemoteReducers {
 
   removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
     this.connection.offReducer("add_unit", callback);
+  }
+
+  chatMessage(message: string) {
+    const __args = { message };
+    let __writer = new BinaryWriter(1024);
+    ChatMessage.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("chat_message", __argsBuffer, this.setCallReducerFlags.chatMessageFlags);
+  }
+
+  onChatMessage(callback: (ctx: ReducerEventContext, message: string) => void) {
+    this.connection.onReducer("chat_message", callback);
+  }
+
+  removeOnChatMessage(callback: (ctx: ReducerEventContext, message: string) => void) {
+    this.connection.offReducer("chat_message", callback);
   }
 
   deleteAll() {
@@ -380,6 +403,11 @@ export class SetReducerFlags {
   addUnitFlags: CallReducerFlags = 'FullUpdate';
   addUnit(flags: CallReducerFlags) {
     this.addUnitFlags = flags;
+  }
+
+  chatMessageFlags: CallReducerFlags = 'FullUpdate';
+  chatMessage(flags: CallReducerFlags) {
+    this.chatMessageFlags = flags;
   }
 
   deleteAllFlags: CallReducerFlags = 'FullUpdate';

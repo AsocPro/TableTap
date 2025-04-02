@@ -1,4 +1,5 @@
 import { DbConnection } from '../module_bindings';
+import { Chat } from '../components/Chat';
 
 export class ActionsTab {
     private container: HTMLDivElement;
@@ -11,9 +12,17 @@ export class ActionsTab {
     }
 
     private createContent() {
-        const actionsContainer = document.createElement('div');
-        actionsContainer.style.display = 'grid';
-        actionsContainer.style.gap = '10px';
+        // Create main content container
+        const contentContainer = document.createElement('div');
+        contentContainer.style.display = 'flex';
+        contentContainer.style.flexDirection = 'column';
+        contentContainer.style.gap = '20px';
+        contentContainer.style.height = '100%';
+
+        // Create actions section
+        const actionsSection = document.createElement('div');
+        actionsSection.style.display = 'grid';
+        actionsSection.style.gap = '10px';
         
         // Create dice roll button
         const rollButton = document.createElement('button');
@@ -26,12 +35,10 @@ export class ActionsTab {
         rollButton.style.cursor = 'pointer';
         
         rollButton.addEventListener('click', () => {
-            // Server-side reducer is roll_dice but TypeScript binding might have converted it to camelCase
             this.dbConnection.reducers.rollDice();
         });
         
-        actionsContainer.appendChild(rollButton);
-        this.container.appendChild(actionsContainer);
+        actionsSection.appendChild(rollButton);
         
         // Add result display
         const resultDisplay = document.createElement('div');
@@ -41,6 +48,22 @@ export class ActionsTab {
         resultDisplay.style.borderRadius = '4px';
         resultDisplay.textContent = 'Roll the dice to see results in the Action Log';
         
-        actionsContainer.appendChild(resultDisplay);
+        actionsSection.appendChild(resultDisplay);
+
+        // Create chat section
+        const chatSection = document.createElement('div');
+        chatSection.style.flexGrow = '1';
+        chatSection.style.minHeight = '200px';
+        chatSection.style.maxHeight = '300px';
+
+        // Add sections to content container
+        contentContainer.appendChild(actionsSection);
+        contentContainer.appendChild(chatSection);
+
+        // Initialize chat component
+        new Chat(chatSection, this.dbConnection);
+
+        // Add content container to main container
+        this.container.appendChild(contentContainer);
     }
 } 

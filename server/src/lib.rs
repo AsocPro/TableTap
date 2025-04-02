@@ -2,6 +2,8 @@ use spacetimedb::{ReducerContext, Table};
 use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
 
+
+
 #[spacetimedb::table(name = unit, public)]
 pub struct Unit {
     #[primary_key]
@@ -271,5 +273,20 @@ pub fn roll_dice(ctx: &ReducerContext) {
         obstacles: Some(ctx.db.obstacle().iter().collect()),
         created_at: Some(ctx.timestamp),
         updated_at: Some(ctx.timestamp)
+    });
+}
+
+#[spacetimedb::reducer]
+pub fn chat_message(ctx: &ReducerContext, message: String) {
+    // Create a new action with the chat message
+    ctx.db.action().insert(Action {
+        action_type: "CHAT_MESSAGE".to_string(),
+        description: message,
+        timestamp: ctx.timestamp,
+        terrains: None,
+        units: None,
+        obstacles: None,
+        created_at: Some(ctx.timestamp),
+        updated_at: Some(ctx.timestamp),
     });
 }

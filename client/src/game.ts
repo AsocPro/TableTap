@@ -1,7 +1,7 @@
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
-import type { EventContext, Unit, Terrain, Obstacle, GameState } from './module_bindings';
+import type { EventContext, Unit, Terrain, Obstacle } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
@@ -26,10 +26,10 @@ export class Game {
     private terrain: Map<number, Terrain>;
     private renderer: Renderer;
     private dbConnection: DbConnection;
-    private selectedGameState: GameState | null = null;
-    private gameStates: Map<string, GameState> = new Map();
+    private selectedGameState: any | null = null;
+    private gameStates: Map<string, any> = new Map();
     private selectedAction: any = null;
-    private actionStates: Map<Timestamp, any> = new Map();
+    private actionStates: Map<number, any> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -138,7 +138,7 @@ export class Game {
         const actionCallback = (_ctx: EventContext, action: any) => {
             // If the action has state data (units, terrains, obstacles)
             if (action.units || action.terrains || action.obstacles) {
-                this.actionStates.set(action.timestamp, action);
+                this.actionStates.set(Number(action.timestamp), action);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);
@@ -178,107 +178,108 @@ export class Game {
     }
 
     private createUI() {
-        // Store a reference to the parent before we detach the canvas container
-        const canvasParent = this.canvasContainer.parentElement;
-        
-        // Create the main layout container
+        // Create main container
         const mainContainer = document.createElement('div');
-        mainContainer.style.margin = '0 auto';
-        mainContainer.style.maxWidth = '1200px';
-        
-        // Create a top section container for canvas and log side by side
+        mainContainer.style.display = 'flex';
+        mainContainer.style.flexDirection = 'column';
+        mainContainer.style.gap = '20px';
+        mainContainer.style.padding = '20px';
+
+        // Create top section for canvas and action log
         const topSection = document.createElement('div');
         topSection.style.display = 'flex';
-        topSection.style.marginBottom = '20px';
-        
-        // Detach canvas container from its current parent before adding it to the new parent
-        if (this.canvasContainer.parentElement) {
-            this.canvasContainer.parentElement.removeChild(this.canvasContainer);
-        }
-        
-        // 1. Left section (canvas)
+        topSection.style.gap = '20px';
+
+        // Create canvas section
         const canvasSection = document.createElement('div');
-        canvasSection.style.flex = '0 0 600px';
+        canvasSection.style.width = '600px';
+        canvasSection.style.height = '400px';
+        canvasSection.style.position = 'relative';
+        canvasSection.style.backgroundColor = '#f0f0f0';
+        canvasSection.style.borderRadius = '4px';
+        canvasSection.style.overflow = 'hidden';
+
+        // Detach canvas container from its current parent if it exists
+        const parent = this.canvasContainer.parentElement;
+        if (parent) {
+            parent.removeChild(this.canvasContainer);
+        }
         canvasSection.appendChild(this.canvasContainer);
-        
-        // 2. Right section (action log)
+
+        // Create log section
         const logSection = document.createElement('div');
-        logSection.style.flex = '0 0 250px';
-        logSection.style.height = '400px'; // Match canvas height
-        logSection.style.margin = '0 0 0 20px';
-        
-        // Initialize the action log with a reference to the game instance
-        new ActionLog(logSection, this.dbConnection, this);
-        
-        // Add canvas and log to top section
-        topSection.appendChild(canvasSection);
-        topSection.appendChild(logSection);
-        
-        // 3. Bottom section (UI tabs)
+        logSection.style.width = '250px';
+        logSection.style.height = '400px';
+
+        // Create UI section for tabs
         const uiSection = document.createElement('div');
-        uiSection.style.width = '600px'; // Match canvas width
-        uiSection.style.padding = '10px';
-        uiSection.style.backgroundColor = '#f0f0f0';
-        uiSection.style.borderRadius = '5px';
-        
-        // Create tabs for different sections
+        uiSection.style.width = '100%';
+        uiSection.style.backgroundColor = '#fff';
+        uiSection.style.borderRadius = '4px';
+        uiSection.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
+        // Create tab container
         const tabContainer = document.createElement('div');
         tabContainer.style.display = 'flex';
-        tabContainer.style.marginBottom = '10px';
-        
-        const tabs = ['Game Setup', 'Actions'];
-        const tabElements: HTMLDivElement[] = [];
-        const contentPanels: HTMLDivElement[] = [];
-        
-        tabs.forEach((tabName, index) => {
-            const tab = document.createElement('div');
-            tab.textContent = tabName;
-            tab.style.padding = '8px 16px';
-            tab.style.backgroundColor = index === 0 ? '#ddd' : '#ccc';
-            tab.style.cursor = 'pointer';
-            tab.style.borderRadius = '5px 5px 0 0';
-            tab.style.marginRight = '2px';
-            
-            tab.addEventListener('click', () => {
-                tabElements.forEach((t, i) => {
-                    t.style.backgroundColor = i === index ? '#ddd' : '#ccc';
-                });
-                
-                contentPanels.forEach((panel, i) => {
-                    panel.style.display = i === index ? 'block' : 'none';
-                });
-            });
-            
-            tabElements.push(tab);
-            tabContainer.appendChild(tab);
-            
-            // Create content panel for each tab
-            const contentPanel = document.createElement('div');
-            contentPanel.style.display = index === 0 ? 'block' : 'none';
-            contentPanel.style.padding = '10px';
-            contentPanel.style.backgroundColor = '#ddd';
-            contentPanel.style.borderRadius = '0 5px 5px 5px';
-            
-            contentPanels.push(contentPanel);
-            
-            // Initialize tab content
-            if (tabName === 'Game Setup') {
-                new GameSetupTab(contentPanel, this.dbConnection, this.canvasLayers.overlay);
-            } else if (tabName === 'Actions') {
-                new ActionsTab(contentPanel, this.dbConnection);
-            }
+        tabContainer.style.borderBottom = '1px solid #eee';
+
+        // Create tabs
+        const gameSetupTab = document.createElement('div');
+        gameSetupTab.textContent = 'Game Setup';
+        gameSetupTab.style.padding = '10px';
+        gameSetupTab.style.cursor = 'pointer';
+        gameSetupTab.style.borderBottom = '2px solid #3498db';
+
+        const actionsTab = document.createElement('div');
+        actionsTab.textContent = 'Actions';
+        actionsTab.style.padding = '10px';
+        actionsTab.style.cursor = 'pointer';
+
+        // Create content panels
+        const gameSetupContent = document.createElement('div');
+        gameSetupContent.style.padding = '20px';
+        gameSetupContent.style.display = 'block';
+
+        const actionsContent = document.createElement('div');
+        actionsContent.style.padding = '20px';
+        actionsContent.style.display = 'none';
+
+        // Add tab click handlers
+        gameSetupTab.addEventListener('click', () => {
+            gameSetupTab.style.borderBottom = '2px solid #3498db';
+            actionsTab.style.borderBottom = 'none';
+            gameSetupContent.style.display = 'block';
+            actionsContent.style.display = 'none';
         });
-        
+
+        actionsTab.addEventListener('click', () => {
+            actionsTab.style.borderBottom = '2px solid #3498db';
+            gameSetupTab.style.borderBottom = 'none';
+            actionsContent.style.display = 'block';
+            gameSetupContent.style.display = 'none';
+        });
+
+        // Assemble tabs
+        tabContainer.appendChild(gameSetupTab);
+        tabContainer.appendChild(actionsTab);
         uiSection.appendChild(tabContainer);
-        contentPanels.forEach(panel => uiSection.appendChild(panel));
-        
-        // Assemble the layout - top section first, then tabs below
+        uiSection.appendChild(gameSetupContent);
+        uiSection.appendChild(actionsContent);
+
+        // Initialize components
+        new GameSetupTab(gameSetupContent, this.dbConnection, this.canvasLayers.overlay);
+        new ActionsTab(actionsContent, this.dbConnection);
+        new ActionLog(logSection, this.dbConnection, this);
+
+        // Assemble layout
+        topSection.appendChild(canvasSection);
+        topSection.appendChild(logSection);
         mainContainer.appendChild(topSection);
         mainContainer.appendChild(uiSection);
-        
-        // Add the main container to the parent
-        if (canvasParent) {
-            canvasParent.appendChild(mainContainer);
+
+        // Add to DOM
+        if (parent) {
+            parent.appendChild(mainContainer);
         } else {
             document.body.appendChild(mainContainer);
         }
@@ -292,11 +293,22 @@ export class Game {
             return;
         }
         
-        const action = this.actionStates.get(actionId);
+        const action = this.actionStates.get(Number(actionId));
         if (action) {
             this.selectedAction = action;
         } else {
             console.error(`Action with ID ${actionId} not found`);
+        }
+    }
+
+    private handleAction(action: any) {
+        if (action.action_type === 'DICE_ROLL') {
+            // Store the game state at this action
+            this.actionStates.set(Number(action.timestamp), {
+                units: this.units,
+                obstacles: this.obstacles,
+                terrain: this.terrain
+            });
         }
     }
 }
