@@ -67,8 +67,12 @@ import { ActionTableHandle } from "./action_table.ts";
 export { ActionTableHandle };
 import { ObstacleTableHandle } from "./obstacle_table.ts";
 export { ObstacleTableHandle };
+import { OverlayTableHandle } from "./overlay_table.ts";
+export { OverlayTableHandle };
 import { TerrainTableHandle } from "./terrain_table.ts";
 export { TerrainTableHandle };
+import { UnderlayTableHandle } from "./underlay_table.ts";
+export { UnderlayTableHandle };
 import { UnitTableHandle } from "./unit_table.ts";
 export { UnitTableHandle };
 
@@ -77,10 +81,16 @@ import { Action } from "./action_type.ts";
 export { Action };
 import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
+import { Overlay } from "./overlay_type.ts";
+export { Overlay };
 import { Terrain } from "./terrain_type.ts";
 export { Terrain };
+import { Underlay } from "./underlay_type.ts";
+export { Underlay };
 import { Unit } from "./unit_type.ts";
 export { Unit };
+import { Vec2 } from "./vec_2_type.ts";
+export { Vec2 };
 
 const REMOTE_MODULE = {
   tables: {
@@ -94,9 +104,19 @@ const REMOTE_MODULE = {
       rowType: Obstacle.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
+    overlay: {
+      tableName: "overlay",
+      rowType: Overlay.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
     terrain: {
       tableName: "terrain",
       rowType: Terrain.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
+    underlay: {
+      tableName: "underlay",
+      rowType: Underlay.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     unit: {
@@ -458,8 +478,16 @@ export class RemoteTables {
     return new ObstacleTableHandle(this.connection.clientCache.getOrCreateTable<Obstacle>(REMOTE_MODULE.tables.obstacle));
   }
 
+  get overlay(): OverlayTableHandle {
+    return new OverlayTableHandle(this.connection.clientCache.getOrCreateTable<Overlay>(REMOTE_MODULE.tables.overlay));
+  }
+
   get terrain(): TerrainTableHandle {
     return new TerrainTableHandle(this.connection.clientCache.getOrCreateTable<Terrain>(REMOTE_MODULE.tables.terrain));
+  }
+
+  get underlay(): UnderlayTableHandle {
+    return new UnderlayTableHandle(this.connection.clientCache.getOrCreateTable<Underlay>(REMOTE_MODULE.tables.underlay));
   }
 
   get unit(): UnitTableHandle {

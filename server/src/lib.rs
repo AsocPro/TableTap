@@ -1,8 +1,7 @@
 use spacetimedb::{ReducerContext, Table};
 use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
-
-
+use spacetimedb::SpacetimeType;
 
 #[spacetimedb::table(name = unit, public)]
 pub struct Unit {
@@ -45,6 +44,36 @@ pub struct Action {
     obstacles: Option<Vec<Obstacle>>,
     created_at: Option<Timestamp>,
     updated_at: Option<Timestamp>
+}
+
+#[spacetimedb::table(name = underlay, public)]
+pub struct Underlay {
+    #[primary_key]
+    id: u64,
+    shape_type: String,
+    size: u32,
+    color: String,
+    position: Vec<Vec2>,
+    created_at: Option<Timestamp>,
+    updated_at: Option<Timestamp>
+}
+
+#[spacetimedb::table(name = overlay, public)]
+pub struct Overlay {
+    #[primary_key]
+    id: u64,
+    shape_type: String,
+    size: u32,
+    color: String,
+    position: Vec<Vec2>,
+    created_at: Option<Timestamp>,
+    updated_at: Option<Timestamp>
+}
+
+#[derive(SpacetimeType, Clone, Debug)]
+pub struct Vec2 {
+    x: u32,
+    y: u32,
 }
 
 #[spacetimedb::reducer(init)]
