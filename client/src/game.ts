@@ -29,7 +29,7 @@ export class Game {
     private selectedGameState: any | null = null;
     private gameStates: Map<string, any> = new Map();
     private selectedAction: any = null;
-    private actionStates: Map<number, any> = new Map();
+    private actionStates: Map<Timestamp, any> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -138,7 +138,7 @@ export class Game {
         const actionCallback = (_ctx: EventContext, action: any) => {
             // If the action has state data (units, terrains, obstacles)
             if (action.units || action.terrains || action.obstacles) {
-                this.actionStates.set(Number(action.timestamp), action);
+                this.actionStates.set(action.timestamp, action);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);
@@ -293,7 +293,7 @@ export class Game {
             return;
         }
         
-        const action = this.actionStates.get(Number(actionId));
+        const action = this.actionStates.get(actionId);
         if (action) {
             this.selectedAction = action;
         } else {
@@ -304,7 +304,7 @@ export class Game {
     private handleAction(action: any) {
         if (action.action_type === 'DICE_ROLL') {
             // Store the game state at this action
-            this.actionStates.set(Number(action.timestamp), {
+            this.actionStates.set(action.timestamp, {
                 units: this.units,
                 obstacles: this.obstacles,
                 terrain: this.terrain
