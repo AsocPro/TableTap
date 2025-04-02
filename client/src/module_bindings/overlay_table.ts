@@ -34,6 +34,7 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Overlay } from "./overlay_type";
+import { ShapeType as __ShapeType } from "./shape_type_type";
 import { Vec2 as __Vec2 } from "./vec_2_type";
 
 import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";

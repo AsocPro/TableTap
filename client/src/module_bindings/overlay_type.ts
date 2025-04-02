@@ -33,11 +33,12 @@ import type {
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
+import { ShapeType as __ShapeType } from "./shape_type_type";
 import { Vec2 as __Vec2 } from "./vec_2_type";
 
 export type Overlay = {
   id: bigint,
-  shapeType: string,
+  shapeType: __ShapeType,
   size: number,
   color: string,
   position: __Vec2[],
@@ -56,7 +57,7 @@ export namespace Overlay {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("shapeType", AlgebraicType.createStringType()),
+      new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("size", AlgebraicType.createU32Type()),
       new ProductTypeElement("color", AlgebraicType.createStringType()),
       new ProductTypeElement("position", AlgebraicType.createArrayType(__Vec2.getTypeScriptAlgebraicType())),

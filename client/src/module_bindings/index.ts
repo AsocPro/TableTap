@@ -83,6 +83,8 @@ import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
 import { Overlay } from "./overlay_type.ts";
 export { Overlay };
+import { ShapeType } from "./shape_type_type.ts";
+export { ShapeType };
 import { Terrain } from "./terrain_type.ts";
 export { Terrain };
 import { Underlay } from "./underlay_type.ts";

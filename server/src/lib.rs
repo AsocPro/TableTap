@@ -50,7 +50,7 @@ pub struct Action {
 pub struct Underlay {
     #[primary_key]
     id: u64,
-    shape_type: String,
+    shape_type: ShapeType,
     size: u32,
     color: String,
     position: Vec<Vec2>,
@@ -62,7 +62,7 @@ pub struct Underlay {
 pub struct Overlay {
     #[primary_key]
     id: u64,
-    shape_type: String,
+    shape_type: ShapeType,
     size: u32,
     color: String,
     position: Vec<Vec2>,
@@ -74,6 +74,14 @@ pub struct Overlay {
 pub struct Vec2 {
     x: u32,
     y: u32,
+}
+#[derive(SpacetimeType, Clone, Debug)]
+pub enum ShapeType {
+    Circle,
+    Rectangle,
+    Line,
+    Polygon,
+    Text,
 }
 
 #[spacetimedb::reducer(init)]
