@@ -1,4 +1,5 @@
-import type { Unit, Terrain, Obstacle, GameState } from "./module_bindings";
+import type { Unit, Terrain, Obstacle, Underlay, Overlay } from "./module_bindings";
+import { ShapeType } from "./module_bindings";
 
 export class Renderer {
     private contexts: {
@@ -10,6 +11,8 @@ export class Renderer {
     private units: Map<number, Unit>;
     private obstacles: Map<number, Obstacle>;
     private terrain: Map<number, Terrain>;
+    private underlays: Map<number, Underlay>;
+    private overlays: Map<number, Overlay>;
 
     constructor(
         contexts: {
@@ -20,63 +23,79 @@ export class Renderer {
         },
         units: Map<number, Unit>,
         obstacles: Map<number, Obstacle>,
-        terrain: Map<number, Terrain>
+        terrain: Map<number, Terrain>,
+        underlays: Map<number, Underlay>,
+        overlays: Map<number, Overlay>
     ) {
         this.contexts = contexts;
         this.units = units;
         this.obstacles = obstacles;
         this.terrain = terrain;
+        this.underlays = underlays;
+        this.overlays = overlays;
     }
 
     draw() {
         this.clearCanvases();
+        console.log("Drawing underlays:", this.underlays.size);
+        this.drawUnderlays();
+        console.log("Drawing terrain");
         this.drawTerrain();
+        console.log("Drawing obstacles");
         this.drawObstacles();
+        console.log("Drawing units");
         this.drawUnits();
-    }
-
-    // Draw from a specific game state
-    drawFromGameState(gameState: GameState) {
-        this.clearCanvases();
-        
-        // Draw terrain from game state
-        for (const terrain of gameState.terrains) {
-            this.drawTerrainItem(terrain);
-        }
-        
-        // Draw obstacles from game state
-        for (const obstacle of gameState.obstacles) {
-            this.drawObstacleItem(obstacle);
-        }
-        
-        // Draw units from game state
-        for (const unit of gameState.units) {
-            this.drawUnitItem(unit);
-        }
+        console.log("Drawing overlays:", this.overlays.size);
+        this.drawOverlays();
     }
 
     // Draw from a specific action with embedded state data
-    drawFromActionState(action: any) {
+    drawFromActionState(action: { 
+        units?: Map<number, Unit>,
+        obstacles?: Map<number, Obstacle>,
+        terrain?: Map<number, Terrain>,
+        underlays?: Map<number, Underlay>,
+        overlays?: Map<number, Overlay>
+    }) {
         this.clearCanvases();
         
+        // Draw underlays from action state
+        if (action.underlays) {
+            console.log("Drawing underlays from action state:", action.underlays.size);
+            for (const underlay of action.underlays.values()) {
+                this.drawShape(this.contexts.underlay, underlay);
+            }
+        }
+        
         // Draw terrain from action state
-        if (action.terrains && Array.isArray(action.terrains)) {
-            for (const terrain of action.terrains) {
+        if (action.terrain) {
+            console.log("Drawing terrain from action state");
+            for (const terrain of action.terrain.values()) {
                 this.drawTerrainItem(terrain);
             }
         }
         
         // Draw obstacles from action state
-        if (action.obstacles && Array.isArray(action.obstacles)) {
-            for (const obstacle of action.obstacles) {
+        if (action.obstacles) {
+            console.log("Drawing obstacles from action state");
+            for (const obstacle of action.obstacles.values()) {
                 this.drawObstacleItem(obstacle);
             }
         }
         
         // Draw units from action state
-        if (action.units && Array.isArray(action.units)) {
-            for (const unit of action.units) {
+        if (action.units) {
+            console.log("Drawing units from action state");
+            for (const unit of action.units.values()) {
                 this.drawUnitItem(unit);
+            }
+        }
+
+        // Draw overlays from action state
+        if (action.overlays) {
+            console.log("Drawing overlays from action state:", action.overlays.size);
+            for (const overlay of action.overlays.values()) {
+                this.drawShape(this.contexts.overlay, overlay);
             }
         }
     }
@@ -150,6 +169,106 @@ export class Renderer {
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
+    }
+
+    private drawUnderlays() {
+        const ctx = this.contexts.underlay;
+        for (const underlay of this.underlays.values()) {
+            this.drawShape(ctx, underlay);
+        }
+    }
+
+    private drawOverlays() {
+        const ctx = this.contexts.overlay;
+        for (const overlay of this.overlays.values()) {
+            this.drawShape(ctx, overlay);
+        }
+    }
+
+    private drawShape(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        ctx.fillStyle = shape.color;
+        ctx.strokeStyle = shape.color;
+        ctx.lineWidth = 2;
+
+
+        switch (shape.shapeType.tag) {
+            case "Circle":
+                this.drawCircle(ctx, shape);
+                break;
+            case "Rectangle":
+                this.drawRectangle(ctx, shape);
+                break;
+            case "Line":
+                this.drawLine(ctx, shape);
+                break;
+            case "Polygon":
+                this.drawPolygon(ctx, shape);
+                break;
+            case "Text":
+                this.drawText(ctx, shape);
+                break;
+        }
+    }
+
+    private drawCircle(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        if (shape.position.length < 1) return;
+        const center = shape.position[0];
+        if (!center) return;
+        console.log("Drawing circle at:", center.x, center.y, "radius:", shape.size / 2);
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, shape.size / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    private drawRectangle(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        if (shape.position.length < 2) return;
+        const topLeft = shape.position[0];
+        const bottomRight = shape.position[1];
+        if (!topLeft || !bottomRight) return;
+        console.log("Drawing rectangle from:", topLeft.x, topLeft.y, "to:", bottomRight.x, bottomRight.y);
+        const width = bottomRight.x - topLeft.x;
+        const height = bottomRight.y - topLeft.y;
+        ctx.fillRect(topLeft.x, topLeft.y, width, height);
+        ctx.strokeRect(topLeft.x, topLeft.y, width, height);
+    }
+
+    private drawLine(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        if (shape.position.length < 2) return;
+        const start = shape.position[0];
+        const end = shape.position[1];
+        if (!start || !end) return;
+        console.log("Drawing line from:", start.x, start.y, "to:", end.x, end.y);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+    }
+
+    private drawPolygon(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        if (shape.position.length < 3) return;
+        const firstPoint = shape.position[0];
+        if (!firstPoint) return;
+        console.log("Drawing polygon with", shape.position.length, "points");
+        ctx.beginPath();
+        ctx.moveTo(firstPoint.x, firstPoint.y);
+        for (let i = 1; i < shape.position.length; i++) {
+            const point = shape.position[i];
+            if (!point) continue;
+            ctx.lineTo(point.x, point.y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    private drawText(ctx: CanvasRenderingContext2D, shape: Underlay | Overlay) {
+        if (shape.position.length < 1) return;
+        const pos = shape.position[0];
+        if (!pos) return;
+        console.log("Drawing text at:", pos.x, pos.y);
+        ctx.font = `${shape.size}px Arial`;
+        ctx.fillText(shape.color, pos.x, pos.y);
     }
 }
 

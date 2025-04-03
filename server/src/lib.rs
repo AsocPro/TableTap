@@ -42,6 +42,8 @@ pub struct Action {
     terrains: Option<Vec<Terrain>>,
     units: Option<Vec<Unit>>,
     obstacles: Option<Vec<Obstacle>>,
+    underlays: Option<Vec<Underlay>>,
+    overlays: Option<Vec<Overlay>>,
     created_at: Option<Timestamp>,
     updated_at: Option<Timestamp>
 }
@@ -97,6 +99,69 @@ pub fn init(_ctx: &ReducerContext) {
     // Add some initial terrain (traversable)
     _ctx.db.terrain().insert(Terrain { id: 1, x: 200, y: 250, length: 150, height: 100 });
     _ctx.db.terrain().insert(Terrain { id: 2, x: 50, y: 100, length: 80, height: 80 });
+
+    // Add example underlays
+    _ctx.db.underlay().insert(Underlay {
+        id: 1,
+        shape_type: ShapeType::Circle,
+        size: 100,
+        color: "rgba(0, 255, 0, 0.2)".to_string(),
+        position: vec![Vec2 { x: 300, y: 300 }],
+        created_at: Some(_ctx.timestamp),
+        updated_at: Some(_ctx.timestamp)
+    });
+
+    _ctx.db.underlay().insert(Underlay {
+        id: 2,
+        shape_type: ShapeType::Rectangle,
+        size: 0,
+        color: "rgba(255, 165, 0, 0.2)".to_string(),
+        position: vec![
+            Vec2 { x: 100, y: 100 },
+            Vec2 { x: 200, y: 200 }
+        ],
+        created_at: Some(_ctx.timestamp),
+        updated_at: Some(_ctx.timestamp)
+    });
+
+    // Add example overlays
+    _ctx.db.overlay().insert(Overlay {
+        id: 1,
+        shape_type: ShapeType::Line,
+        size: 3,
+        color: "rgba(255, 0, 0, 0.8)".to_string(),
+        position: vec![
+            Vec2 { x: 50, y: 50 },
+            Vec2 { x: 550, y: 350 }
+        ],
+        created_at: Some(_ctx.timestamp),
+        updated_at: Some(_ctx.timestamp)
+    });
+
+    _ctx.db.overlay().insert(Overlay {
+        id: 2,
+        shape_type: ShapeType::Polygon,
+        size: 0,
+        color: "rgba(0, 0, 255, 0.3)".to_string(),
+        position: vec![
+            Vec2 { x: 400, y: 100 },
+            Vec2 { x: 500, y: 100 },
+            Vec2 { x: 500, y: 200 },
+            Vec2 { x: 400, y: 200 }
+        ],
+        created_at: Some(_ctx.timestamp),
+        updated_at: Some(_ctx.timestamp)
+    });
+
+    _ctx.db.overlay().insert(Overlay {
+        id: 3,
+        shape_type: ShapeType::Text,
+        size: 24,
+        color: "rgba(0, 0, 0, 1.0)".to_string(),
+        position: vec![Vec2 { x: 250, y: 50 }],
+        created_at: Some(_ctx.timestamp),
+        updated_at: Some(_ctx.timestamp)
+    });
 }
 
 #[spacetimedb::reducer(client_connected)]
@@ -308,6 +373,8 @@ pub fn roll_dice(ctx: &ReducerContext) {
         terrains: Some(ctx.db.terrain().iter().collect()),
         units: Some(ctx.db.unit().iter().collect()),
         obstacles: Some(ctx.db.obstacle().iter().collect()),
+        underlays: Some(ctx.db.underlay().iter().collect()),
+        overlays: Some(ctx.db.overlay().iter().collect()),
         created_at: Some(ctx.timestamp),
         updated_at: Some(ctx.timestamp)
     });
@@ -323,7 +390,61 @@ pub fn chat_message(ctx: &ReducerContext, message: String) {
         terrains: None,
         units: None,
         obstacles: None,
+        underlays: None,
+        overlays: None,
         created_at: Some(ctx.timestamp),
         updated_at: Some(ctx.timestamp),
     });
+}
+
+#[spacetimedb::reducer]
+pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeType, size: u32, color: String, position: Vec<Vec2>) {
+    let mut new_id = underlay_id;
+    while let Some(_underlay) = ctx.db.underlay().id().find(underlay_id) {
+        new_id = new_id + 1;
+    }
+    ctx.db.underlay().insert(Underlay { 
+        id: new_id, 
+        shape_type, 
+        size, 
+        color, 
+        position,
+        created_at: Some(ctx.timestamp),
+        updated_at: Some(ctx.timestamp)
+    });
+}
+
+#[spacetimedb::reducer]
+pub fn add_overlay(ctx: &ReducerContext, overlay_id: u64, shape_type: ShapeType, size: u32, color: String, position: Vec<Vec2>) {
+    let mut new_id = overlay_id;
+    while let Some(_overlay) = ctx.db.overlay().id().find(overlay_id) {
+        new_id = new_id + 1;
+    }
+    ctx.db.overlay().insert(Overlay { 
+        id: new_id, 
+        shape_type, 
+        size, 
+        color, 
+        position,
+        created_at: Some(ctx.timestamp),
+        updated_at: Some(ctx.timestamp)
+    });
+}
+
+#[spacetimedb::reducer]
+pub fn delete_underlay(ctx: &ReducerContext, underlay_id: u64) {
+    if let Some(_underlay) = ctx.db.underlay().id().find(underlay_id) {
+        ctx.db.underlay().id().delete(underlay_id);
+    } else {
+        log::error!("Failed to delete underlay: ID {} not found", underlay_id);
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
+    if let Some(_overlay) = ctx.db.overlay().id().find(overlay_id) {
+        ctx.db.overlay().id().delete(overlay_id);
+    } else {
+        log::error!("Failed to delete overlay: ID {} not found", overlay_id);
+    }
 }

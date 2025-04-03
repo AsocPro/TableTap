@@ -26,6 +26,8 @@ import {
 import { Terrain as __Terrain } from "./terrain_type";
 import { Unit as __Unit } from "./unit_type";
 import { Obstacle as __Obstacle } from "./obstacle_type";
+import { Underlay as __Underlay } from "./underlay_type";
+import { Overlay as __Overlay } from "./overlay_type";
 
 import type {
   CallReducerFlags,
@@ -43,6 +45,8 @@ export type Action = {
   terrains: __Terrain[] | undefined,
   units: __Unit[] | undefined,
   obstacles: __Obstacle[] | undefined,
+  underlays: __Underlay[] | undefined,
+  overlays: __Overlay[] | undefined,
   createdAt: Timestamp | undefined,
   updatedAt: Timestamp | undefined,
 };
@@ -63,6 +67,8 @@ export namespace Action {
       new ProductTypeElement("terrains", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Terrain.getTypeScriptAlgebraicType()))),
       new ProductTypeElement("units", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Unit.getTypeScriptAlgebraicType()))),
       new ProductTypeElement("obstacles", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Obstacle.getTypeScriptAlgebraicType()))),
+      new ProductTypeElement("underlays", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Underlay.getTypeScriptAlgebraicType()))),
+      new ProductTypeElement("overlays", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__Overlay.getTypeScriptAlgebraicType()))),
       new ProductTypeElement("createdAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
       new ProductTypeElement("updatedAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
     ]);

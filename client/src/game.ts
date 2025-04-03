@@ -1,7 +1,7 @@
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
-import type { EventContext, Unit, Terrain, Obstacle } from './module_bindings';
+import type { EventContext, Unit, Terrain, Obstacle, Underlay, Overlay } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
@@ -24,12 +24,14 @@ export class Game {
     private units: Map<number, Unit>;
     private obstacles: Map<number, Obstacle>;
     private terrain: Map<number, Terrain>;
+    private underlays: Map<number, Underlay>;
+    private overlays: Map<number, Overlay>;
     private renderer: Renderer;
     private dbConnection: DbConnection;
     private selectedGameState: any | null = null;
     private gameStates: Map<string, any> = new Map();
     private selectedAction: any = null;
-    private actionStates: Map<Timestamp, any> = new Map();
+    private actionStates: Map<string, any> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -44,7 +46,9 @@ export class Game {
                         "SELECT * FROM unit", 
                         "SELECT * FROM obstacle", 
                         "SELECT * FROM terrain", 
-                        "SELECT * FROM action"
+                        "SELECT * FROM action",
+                        "SELECT * FROM underlay",
+                        "SELECT * FROM overlay"
                     ]);
             })
             .build();
@@ -82,9 +86,11 @@ export class Game {
             overlay: this.canvasLayers.overlay.getContext('2d')!
         };
         
-	this.units = new Map([]);
+        this.units = new Map([]);
         this.obstacles = new Map([]);
         this.terrain = new Map([]);
+        this.underlays = new Map([]);
+        this.overlays = new Map([]);
         
         // Handle unit data
         const unitCallback = (_ctx: EventContext, unit: Unit) => {
@@ -134,6 +140,44 @@ export class Game {
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
+        // Handle underlay data
+        const underlayCallback = (_ctx: EventContext, underlay: Underlay) => {
+            console.log("Received underlay:", underlay);
+            this.underlays.set(Number(underlay.id), underlay);
+        }
+        this.dbConnection.db.underlay.onInsert(underlayCallback);
+        
+        const underlayUpdateCallback = (_ctx: EventContext, underlay: Underlay) => {
+            console.log("Updated underlay:", underlay);
+            this.underlays.set(Number(underlay.id), underlay);
+        }
+        this.dbConnection.db.underlay.onUpdate(underlayUpdateCallback);
+        
+        const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
+            console.log("Deleted underlay:", underlay);
+            this.underlays.delete(Number(underlay.id));
+        }
+        this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
+        
+        // Handle overlay data
+        const overlayCallback = (_ctx: EventContext, overlay: Overlay) => {
+            console.log("Received overlay:", overlay);
+            this.overlays.set(Number(overlay.id), overlay);
+        }
+        this.dbConnection.db.overlay.onInsert(overlayCallback);
+        
+        const overlayUpdateCallback = (_ctx: EventContext, overlay: Overlay) => {
+            console.log("Updated overlay:", overlay);
+            this.overlays.set(Number(overlay.id), overlay);
+        }
+        this.dbConnection.db.overlay.onUpdate(overlayUpdateCallback);
+        
+        const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
+            console.log("Deleted overlay:", overlay);
+            this.overlays.delete(Number(overlay.id));
+        }
+        this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);
+        
         // Handle action data to extract game states
         const actionCallback = (_ctx: EventContext, action: any) => {
             // If the action has state data (units, terrains, obstacles)
@@ -143,7 +187,7 @@ export class Game {
         }
         this.dbConnection.db.action.onInsert(actionCallback);
         
-        this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain);
+        this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain, this.underlays, this.overlays);
         handleInput(this.dbConnection, this.canvasLayers.overlay, this.units);
         
         // Create UI elements
@@ -307,7 +351,9 @@ export class Game {
             this.actionStates.set(action.timestamp, {
                 units: this.units,
                 obstacles: this.obstacles,
-                terrain: this.terrain
+                terrain: this.terrain,
+                underlays: this.underlays,
+                overlays: this.overlays
             });
         }
     }
