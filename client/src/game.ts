@@ -182,7 +182,7 @@ export class Game {
         this.dbConnection.db.action.onInsert(actionCallback);
         
         this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain, this.underlays, this.overlays);
-        handleInput(this.dbConnection, this.canvasLayers.overlay, this.units);
+        handleInput(this.dbConnection, this.canvasLayers.overlay, this.units, () => this.selectedAction !== null);
         
         // Create UI elements
         this.createUI();
