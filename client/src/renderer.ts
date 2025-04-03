@@ -62,8 +62,8 @@ export class Renderer {
         }
         
         // Draw terrain from action state
-        if (action.terrain) {
-            for (const terrain of action.terrain.values()) {
+        if (action.terrains) {
+            for (const terrain of action.terrains.values()) {
                 this.drawTerrainItem(terrain);
             }
         }
