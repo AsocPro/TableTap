@@ -142,38 +142,32 @@ export class Game {
         
         // Handle underlay data
         const underlayCallback = (_ctx: EventContext, underlay: Underlay) => {
-            console.log("Received underlay:", underlay);
             this.underlays.set(Number(underlay.id), underlay);
         }
         this.dbConnection.db.underlay.onInsert(underlayCallback);
         
         const underlayUpdateCallback = (_ctx: EventContext, underlay: Underlay) => {
-            console.log("Updated underlay:", underlay);
             this.underlays.set(Number(underlay.id), underlay);
         }
         this.dbConnection.db.underlay.onUpdate(underlayUpdateCallback);
         
         const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
-            console.log("Deleted underlay:", underlay);
             this.underlays.delete(Number(underlay.id));
         }
         this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
         
         // Handle overlay data
         const overlayCallback = (_ctx: EventContext, overlay: Overlay) => {
-            console.log("Received overlay:", overlay);
             this.overlays.set(Number(overlay.id), overlay);
         }
         this.dbConnection.db.overlay.onInsert(overlayCallback);
         
         const overlayUpdateCallback = (_ctx: EventContext, overlay: Overlay) => {
-            console.log("Updated overlay:", overlay);
             this.overlays.set(Number(overlay.id), overlay);
         }
         this.dbConnection.db.overlay.onUpdate(overlayUpdateCallback);
         
         const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
-            console.log("Deleted overlay:", overlay);
             this.overlays.delete(Number(overlay.id));
         }
         this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);

@@ -37,15 +37,10 @@ export class Renderer {
 
     draw() {
         this.clearCanvases();
-        console.log("Drawing underlays:", this.underlays.size);
         this.drawUnderlays();
-        console.log("Drawing terrain");
         this.drawTerrain();
-        console.log("Drawing obstacles");
         this.drawObstacles();
-        console.log("Drawing units");
         this.drawUnits();
-        console.log("Drawing overlays:", this.overlays.size);
         this.drawOverlays();
     }
 
@@ -61,7 +56,6 @@ export class Renderer {
         
         // Draw underlays from action state
         if (action.underlays) {
-            console.log("Drawing underlays from action state:", action.underlays.size);
             for (const underlay of action.underlays.values()) {
                 this.drawShape(this.contexts.underlay, underlay);
             }
@@ -69,7 +63,6 @@ export class Renderer {
         
         // Draw terrain from action state
         if (action.terrain) {
-            console.log("Drawing terrain from action state");
             for (const terrain of action.terrain.values()) {
                 this.drawTerrainItem(terrain);
             }
@@ -77,7 +70,6 @@ export class Renderer {
         
         // Draw obstacles from action state
         if (action.obstacles) {
-            console.log("Drawing obstacles from action state");
             for (const obstacle of action.obstacles.values()) {
                 this.drawObstacleItem(obstacle);
             }
@@ -85,7 +77,6 @@ export class Renderer {
         
         // Draw units from action state
         if (action.units) {
-            console.log("Drawing units from action state");
             for (const unit of action.units.values()) {
                 this.drawUnitItem(unit);
             }
@@ -93,7 +84,6 @@ export class Renderer {
 
         // Draw overlays from action state
         if (action.overlays) {
-            console.log("Drawing overlays from action state:", action.overlays.size);
             for (const overlay of action.overlays.values()) {
                 this.drawShape(this.contexts.overlay, overlay);
             }
@@ -214,7 +204,6 @@ export class Renderer {
         if (shape.position.length < 1) return;
         const center = shape.position[0];
         if (!center) return;
-        console.log("Drawing circle at:", center.x, center.y, "radius:", shape.size / 2);
         ctx.beginPath();
         ctx.arc(center.x, center.y, shape.size / 2, 0, 2 * Math.PI);
         ctx.fill();
@@ -226,7 +215,6 @@ export class Renderer {
         const topLeft = shape.position[0];
         const bottomRight = shape.position[1];
         if (!topLeft || !bottomRight) return;
-        console.log("Drawing rectangle from:", topLeft.x, topLeft.y, "to:", bottomRight.x, bottomRight.y);
         const width = bottomRight.x - topLeft.x;
         const height = bottomRight.y - topLeft.y;
         ctx.fillRect(topLeft.x, topLeft.y, width, height);
@@ -238,7 +226,6 @@ export class Renderer {
         const start = shape.position[0];
         const end = shape.position[1];
         if (!start || !end) return;
-        console.log("Drawing line from:", start.x, start.y, "to:", end.x, end.y);
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);
@@ -249,7 +236,6 @@ export class Renderer {
         if (shape.position.length < 3) return;
         const firstPoint = shape.position[0];
         if (!firstPoint) return;
-        console.log("Drawing polygon with", shape.position.length, "points");
         ctx.beginPath();
         ctx.moveTo(firstPoint.x, firstPoint.y);
         for (let i = 1; i < shape.position.length; i++) {
@@ -266,7 +252,6 @@ export class Renderer {
         if (shape.position.length < 1) return;
         const pos = shape.position[0];
         if (!pos) return;
-        console.log("Drawing text at:", pos.x, pos.y);
         ctx.font = `${shape.size}px Arial`;
         ctx.fillText(shape.color, pos.x, pos.y);
     }
