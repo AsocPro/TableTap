@@ -34,11 +34,7 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Action } from "./action_type";
-import { Terrain as __Terrain } from "./terrain_type";
-import { Unit as __Unit } from "./unit_type";
-import { Obstacle as __Obstacle } from "./obstacle_type";
-import { Underlay as __Underlay } from "./underlay_type";
-import { Overlay as __Overlay } from "./overlay_type";
+import { GameState as __GameState } from "./game_state_type";
 
 import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 

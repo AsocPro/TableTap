@@ -1,4 +1,4 @@
-import type { Unit, Terrain, Obstacle, Underlay, Overlay } from "./module_bindings";
+import type { GameState, Unit, Terrain, Obstacle, Underlay, Overlay } from "./module_bindings";
 import { ShapeType } from "./module_bindings";
 
 export class Renderer {
@@ -8,11 +8,6 @@ export class Renderer {
         units: CanvasRenderingContext2D;
         overlay: CanvasRenderingContext2D;
     };
-    private units: Map<number, Unit>;
-    private obstacles: Map<number, Obstacle>;
-    private terrain: Map<number, Terrain>;
-    private underlays: Map<number, Underlay>;
-    private overlays: Map<number, Overlay>;
 
     constructor(
         contexts: {
@@ -20,74 +15,18 @@ export class Renderer {
             terrain: CanvasRenderingContext2D;
             units: CanvasRenderingContext2D;
             overlay: CanvasRenderingContext2D;
-        },
-        units: Map<number, Unit>,
-        obstacles: Map<number, Obstacle>,
-        terrain: Map<number, Terrain>,
-        underlays: Map<number, Underlay>,
-        overlays: Map<number, Overlay>
+        }
     ) {
         this.contexts = contexts;
-        this.units = units;
-        this.obstacles = obstacles;
-        this.terrain = terrain;
-        this.underlays = underlays;
-        this.overlays = overlays;
     }
 
-    draw() {
+    draw(gameState: GameState) {
         this.clearCanvases();
-        this.drawUnderlays();
-        this.drawTerrain();
-        this.drawObstacles();
-        this.drawUnits();
-        this.drawOverlays();
-    }
-
-    // Draw from a specific action with embedded state data
-    drawFromActionState(action: { 
-        units?: Map<number, Unit>,
-        obstacles?: Map<number, Obstacle>,
-        terrain?: Map<number, Terrain>,
-        underlays?: Map<number, Underlay>,
-        overlays?: Map<number, Overlay>
-    }) {
-        this.clearCanvases();
-        
-        // Draw underlays from action state
-        if (action.underlays) {
-            for (const underlay of action.underlays.values()) {
-                this.drawShape(this.contexts.underlay, underlay);
-            }
-        }
-        
-        // Draw terrain from action state
-        if (action.terrains) {
-            for (const terrain of action.terrains.values()) {
-                this.drawTerrainItem(terrain);
-            }
-        }
-        
-        // Draw obstacles from action state
-        if (action.obstacles) {
-            for (const obstacle of action.obstacles.values()) {
-                this.drawObstacleItem(obstacle);
-            }
-        }
-        
-        // Draw units from action state
-        if (action.units) {
-            for (const unit of action.units.values()) {
-                this.drawUnitItem(unit);
-            }
-        }
-
-        // Draw overlays from action state
-        if (action.overlays) {
-            for (const overlay of action.overlays.values()) {
-                this.drawShape(this.contexts.overlay, overlay);
-            }
-        }
+        this.drawUnderlays(gameState.underlays);
+        this.drawTerrain(gameState.terrains);
+        this.drawObstacles(gameState.obstacles);
+        this.drawUnits(gameState.units);
+        this.drawOverlays(gameState.overlays);
     }
 
     private clearCanvases() {
@@ -100,8 +39,8 @@ export class Renderer {
         overlay.clearRect(0, 0, overlay.canvas.width, overlay.canvas.height);
     }
 
-    private drawTerrain() {
-        for (const terrain of this.terrain.values()) {
+    private drawTerrain(terrains: Terrain[]) {
+        for (const terrain of terrains) {
             this.drawTerrainItem(terrain);
         }
     }
@@ -118,8 +57,8 @@ export class Renderer {
         ctx.strokeRect(terrain.x, terrain.y, terrain.length, terrain.height);
     }
 
-    private drawObstacles() {
-        for (const obstacle of this.obstacles.values()) {
+    private drawObstacles(obstacles: Obstacle[]) {
+        for (const obstacle of obstacles) {
             this.drawObstacleItem(obstacle);
         }
     }
@@ -136,8 +75,8 @@ export class Renderer {
         ctx.strokeRect(obstacle.x, obstacle.y, obstacle.length, obstacle.height);
     }
 
-    private drawUnits() {
-        for (const unit of this.units.values()) {
+    private drawUnits(units: Unit[]) {
+        for (const unit of units) {
             this.drawUnitItem(unit);
         }
     }
@@ -161,16 +100,16 @@ export class Renderer {
         ctx.stroke();
     }
 
-    private drawUnderlays() {
+    private drawUnderlays(underlays: Underlay[]) {
         const ctx = this.contexts.underlay;
-        for (const underlay of this.underlays.values()) {
+        for (const underlay of underlays) {
             this.drawShape(ctx, underlay);
         }
     }
 
-    private drawOverlays() {
+    private drawOverlays(overlays: Overlay[]) {
         const ctx = this.contexts.overlay;
-        for (const overlay of this.overlays.values()) {
+        for (const overlay of overlays) {
             this.drawShape(ctx, overlay);
         }
     }
@@ -179,7 +118,6 @@ export class Renderer {
         ctx.fillStyle = shape.color;
         ctx.strokeStyle = shape.color;
         ctx.lineWidth = 2;
-
 
         switch (shape.shapeType.tag) {
             case "Circle":

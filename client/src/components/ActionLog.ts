@@ -90,17 +90,6 @@ export class ActionLog {
     
     private addLogEntry(action: any) {
         try {
-            // Handle different timestamp types safely
-            let timestamp: Timestamp;
-            //if (typeof action.timestamp === 'bigint') {
-            //    timestamp = Number(action.timestamp);
-            //} else if (typeof action.timestamp === 'number') {
-            //    timestamp = action.timestamp;
-            //} else {
-            //    // Fallback to current time if we can't process the timestamp
-            //    timestamp = Date.now();
-            //}
-            
             // Create log entry element
             const logEntry = document.createElement('div');
             logEntry.style.padding = '8px';
@@ -111,7 +100,7 @@ export class ActionLog {
             
             try {
                 // Format timestamp
-                const date = Date(timestamp);// Convert nanoseconds to milliseconds
+                const date = Date(action.timestamp);// Convert nanoseconds to milliseconds
                 const formattedTime = date.toLocaleString();
                 
                 // Create content based on action type
@@ -130,7 +119,7 @@ export class ActionLog {
                 logEntry.innerHTML = `<div><span style="color: #666;">[${formattedTime}]</span> ${content}</div>`;
                 
                 // Check if this action has embedded game state data
-                if (action.units || action.terrains || action.obstacles) {
+                if (action.gameState) {
                     // Make the entry clickable to show this game state
                     logEntry.addEventListener('click', () => {
                         this.activateGameState(action.timestamp, logEntry);
@@ -156,7 +145,7 @@ export class ActionLog {
             } catch (error) {
                 // If we had an error formatting, still show something
                 console.error("Error formatting log entry:", error);
-                logEntry.textContent = `Action at ${timestamp}: ${action.description || 'No description'}`;
+                logEntry.textContent = `Action at ${action.timestamp}: ${action.description || 'No description'}`;
             }
             
             // Add to log container at the top

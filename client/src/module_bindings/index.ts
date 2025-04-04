@@ -91,6 +91,8 @@ export { UnitTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
+import { GameState } from "./game_state_type.ts";
+export { GameState };
 import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
 import { Overlay } from "./overlay_type.ts";

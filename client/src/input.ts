@@ -4,7 +4,6 @@ import { DbConnection } from './module_bindings';
 export function handleInput(
     dbConnection: DbConnection,
     canvas: HTMLCanvasElement,
-    units: Map<number, Unit>,
     isHistoricalView: () => boolean
 ) {
     let startX = 0;

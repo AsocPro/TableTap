@@ -1,7 +1,7 @@
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
-import type { EventContext, Unit, Terrain, Obstacle, Underlay, Overlay } from './module_bindings';
+import type { EventContext, Unit, Terrain, Obstacle, Underlay, Overlay, GameState } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
@@ -21,17 +21,11 @@ export class Game {
         units: CanvasRenderingContext2D;
         overlay: CanvasRenderingContext2D;
     };
-    private units: Map<number, Unit>;
-    private obstacles: Map<number, Obstacle>;
-    private terrain: Map<number, Terrain>;
-    private underlays: Map<number, Underlay>;
-    private overlays: Map<number, Overlay>;
+    private currentGameState: GameState;
     private renderer: Renderer;
     private dbConnection: DbConnection;
-    private selectedGameState: any | null = null;
-    private gameStates: Map<string, any> = new Map();
     private selectedAction: any = null;
-    private actionStates: Map<string, any> = new Map();
+    private actionStates: Map<string, GameState> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -52,6 +46,15 @@ export class Game {
                     ]);
             })
             .build();
+
+        // Initialize empty game state
+        this.currentGameState = {
+            terrains: [],
+            units: [],
+            obstacles: [],
+            underlays: [],
+            overlays: []
+        };
 
         // Get the existing canvas and replace it with a container for multiple canvases
         const existingCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -86,106 +89,112 @@ export class Game {
             overlay: this.canvasLayers.overlay.getContext('2d')!
         };
         
-        this.units = new Map([]);
-        this.obstacles = new Map([]);
-        this.terrain = new Map([]);
-        this.underlays = new Map([]);
-        this.overlays = new Map([]);
+        // Initialize renderer with empty game state
+        this.renderer = new Renderer(this.ctx);
         
+        // Set up database callbacks
+        this.setupDatabaseCallbacks();
+        
+        // Set up input handling
+        handleInput(this.dbConnection, this.canvasLayers.overlay, () => this.selectedAction !== null);
+        
+        // Create UI elements
+        this.createUI();
+    }
+
+    private setupDatabaseCallbacks() {
         // Handle unit data
         const unitCallback = (_ctx: EventContext, unit: Unit) => {
-            this.units.set(Number(unit.id), unit);
+            const index = this.currentGameState.units.findIndex(u => u.id === unit.id);
+            if (index >= 0) {
+                this.currentGameState.units[index] = unit;
+            } else {
+                this.currentGameState.units.push(unit);
+            }
         }
         this.dbConnection.db.unit.onInsert(unitCallback);
-        
-        const unitUpdateCallback = (_ctx: EventContext, unit: Unit) => {
-            this.units.set(Number(unit.id), unit);
-        }
-        this.dbConnection.db.unit.onUpdate(unitUpdateCallback);
+        this.dbConnection.db.unit.onUpdate(unitCallback);
         
         const unitDeleteCallback = (_ctx: EventContext, unit: Unit) => {
-            this.units.delete(Number(unit.id));
+            this.currentGameState.units = this.currentGameState.units.filter(u => u.id !== unit.id);
         }
         this.dbConnection.db.unit.onDelete(unitDeleteCallback);
         
         // Handle obstacle data
         const obstacleCallback = (_ctx: EventContext, obstacle: Obstacle) => {
-            this.obstacles.set(Number(obstacle.id), obstacle);
+            const index = this.currentGameState.obstacles.findIndex(o => o.id === obstacle.id);
+            if (index >= 0) {
+                this.currentGameState.obstacles[index] = obstacle;
+            } else {
+                this.currentGameState.obstacles.push(obstacle);
+            }
         }
         this.dbConnection.db.obstacle.onInsert(obstacleCallback);
-        
-        const obstacleUpdateCallback = (_ctx: EventContext, obstacle: Obstacle) => {
-            this.obstacles.set(Number(obstacle.id), obstacle);
-        }
-        this.dbConnection.db.obstacle.onUpdate(obstacleUpdateCallback);
+        this.dbConnection.db.obstacle.onUpdate(obstacleCallback);
         
         const obstacleDeleteCallback = (_ctx: EventContext, obstacle: Obstacle) => {
-            this.obstacles.delete(Number(obstacle.id));
+            this.currentGameState.obstacles = this.currentGameState.obstacles.filter(o => o.id !== obstacle.id);
         }
         this.dbConnection.db.obstacle.onDelete(obstacleDeleteCallback);
         
         // Handle terrain data
         const terrainCallback = (_ctx: EventContext, terrain: Terrain) => {
-            this.terrain.set(Number(terrain.id), terrain);
+            const index = this.currentGameState.terrains.findIndex(t => t.id === terrain.id);
+            if (index >= 0) {
+                this.currentGameState.terrains[index] = terrain;
+            } else {
+                this.currentGameState.terrains.push(terrain);
+            }
         }
         this.dbConnection.db.terrain.onInsert(terrainCallback);
-        
-        const terrainUpdateCallback = (_ctx: EventContext, terrain: Terrain) => {
-            this.terrain.set(Number(terrain.id), terrain);
-        }
-        this.dbConnection.db.terrain.onUpdate(terrainUpdateCallback);
+        this.dbConnection.db.terrain.onUpdate(terrainCallback);
         
         const terrainDeleteCallback = (_ctx: EventContext, terrain: Terrain) => {
-            this.terrain.delete(Number(terrain.id));
+            this.currentGameState.terrains = this.currentGameState.terrains.filter(t => t.id !== terrain.id);
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
         // Handle underlay data
         const underlayCallback = (_ctx: EventContext, underlay: Underlay) => {
-            this.underlays.set(Number(underlay.id), underlay);
+            const index = this.currentGameState.underlays.findIndex(u => u.id === underlay.id);
+            if (index >= 0) {
+                this.currentGameState.underlays[index] = underlay;
+            } else {
+                this.currentGameState.underlays.push(underlay);
+            }
         }
         this.dbConnection.db.underlay.onInsert(underlayCallback);
-        
-        const underlayUpdateCallback = (_ctx: EventContext, underlay: Underlay) => {
-            this.underlays.set(Number(underlay.id), underlay);
-        }
-        this.dbConnection.db.underlay.onUpdate(underlayUpdateCallback);
+        this.dbConnection.db.underlay.onUpdate(underlayCallback);
         
         const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
-            this.underlays.delete(Number(underlay.id));
+            this.currentGameState.underlays = this.currentGameState.underlays.filter(u => u.id !== underlay.id);
         }
         this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
         
         // Handle overlay data
         const overlayCallback = (_ctx: EventContext, overlay: Overlay) => {
-            this.overlays.set(Number(overlay.id), overlay);
+            const index = this.currentGameState.overlays.findIndex(o => o.id === overlay.id);
+            if (index >= 0) {
+                this.currentGameState.overlays[index] = overlay;
+            } else {
+                this.currentGameState.overlays.push(overlay);
+            }
         }
         this.dbConnection.db.overlay.onInsert(overlayCallback);
-        
-        const overlayUpdateCallback = (_ctx: EventContext, overlay: Overlay) => {
-            this.overlays.set(Number(overlay.id), overlay);
-        }
-        this.dbConnection.db.overlay.onUpdate(overlayUpdateCallback);
+        this.dbConnection.db.overlay.onUpdate(overlayCallback);
         
         const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
-            this.overlays.delete(Number(overlay.id));
+            this.currentGameState.overlays = this.currentGameState.overlays.filter(o => o.id !== overlay.id);
         }
         this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);
         
         // Handle action data to extract game states
         const actionCallback = (_ctx: EventContext, action: any) => {
-            // If the action has state data (units, terrains, obstacles)
-            if (action.units || action.terrains || action.obstacles) {
-                this.actionStates.set(action.timestamp, action);
+            if (action.gameState) {
+                this.actionStates.set(action.timestamp, action.gameState);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);
-        
-        this.renderer = new Renderer(this.ctx, this.units, this.obstacles, this.terrain, this.underlays, this.overlays);
-        handleInput(this.dbConnection, this.canvasLayers.overlay, this.units, () => this.selectedAction !== null);
-        
-        // Create UI elements
-        this.createUI();
     }
 
     private createCanvasLayer(width: number, height: number, zIndex: number): HTMLCanvasElement {
@@ -207,10 +216,10 @@ export class Game {
     update() {
         if (this.selectedAction) {
             // Draw from selected action state
-            this.renderer.drawFromActionState(this.selectedAction);
+            this.renderer.draw(this.actionStates.get(this.selectedAction)!);
         } else {
             // Draw from live data
-            this.renderer.draw();
+            this.renderer.draw(this.currentGameState);
         }
         requestAnimationFrame(() => this.update());
     }
@@ -331,24 +340,10 @@ export class Game {
             return;
         }
         
-        const action = this.actionStates.get(actionId);
-        if (action) {
-            this.selectedAction = action;
+        if (this.actionStates.has(actionId)) {
+            this.selectedAction = actionId;
         } else {
             console.error(`Action with ID ${actionId} not found`);
-        }
-    }
-
-    private handleAction(action: any) {
-        if (action.action_type === 'DICE_ROLL') {
-            // Store the game state at this action
-            this.actionStates.set(action.timestamp, {
-                units: this.units,
-                obstacles: this.obstacles,
-                terrain: this.terrain,
-                underlays: this.underlays,
-                overlays: this.overlays
-            });
         }
     }
 }

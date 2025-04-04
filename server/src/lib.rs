@@ -3,6 +3,7 @@ use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
 use spacetimedb::SpacetimeType;
 
+#[derive(Clone, Debug)]
 #[spacetimedb::table(name = unit, public)]
 pub struct Unit {
     #[primary_key]
@@ -13,6 +14,7 @@ pub struct Unit {
     color: String
 }
 
+#[derive(Clone, Debug)]
 #[spacetimedb::table(name = obstacle, public)]
 pub struct Obstacle {
     #[primary_key]
@@ -23,6 +25,7 @@ pub struct Obstacle {
     height: i32
 }
 
+#[derive(Clone, Debug)]
 #[spacetimedb::table(name = terrain, public)]
 pub struct Terrain {
     #[primary_key]
@@ -33,21 +36,27 @@ pub struct Terrain {
     height: i32
 }
 
+#[derive(SpacetimeType, Clone, Debug)]
+pub struct GameState {
+    pub terrains: Vec<Terrain>,
+    pub units: Vec<Unit>,
+    pub obstacles: Vec<Obstacle>,
+    pub underlays: Vec<Underlay>,
+    pub overlays: Vec<Overlay>
+}
+
 #[spacetimedb::table(name = action, public)]
 pub struct Action {
     #[primary_key]
     timestamp: Timestamp,
     action_type: String,
     description: String,
-    terrains: Option<Vec<Terrain>>,
-    units: Option<Vec<Unit>>,
-    obstacles: Option<Vec<Obstacle>>,
-    underlays: Option<Vec<Underlay>>,
-    overlays: Option<Vec<Overlay>>,
+    game_state: Option<GameState>,
     created_at: Option<Timestamp>,
     updated_at: Option<Timestamp>
 }
 
+#[derive(Clone, Debug)]
 #[spacetimedb::table(name = underlay, public)]
 pub struct Underlay {
     #[primary_key]
@@ -60,6 +69,7 @@ pub struct Underlay {
     updated_at: Option<Timestamp>
 }
 
+#[derive(Clone, Debug)]
 #[spacetimedb::table(name = overlay, public)]
 pub struct Overlay {
     #[primary_key]
@@ -375,16 +385,18 @@ pub fn roll_dice(ctx: &ReducerContext) {
     // Create a description
     let description = format!("🎲 Dice Roll: {}", dice_value);
     
-    // Add to actions table with direct collection of game objects
+    // Add to actions table with game state
     ctx.db.action().insert(Action {
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
         description: description,
-        terrains: Some(ctx.db.terrain().iter().collect()),
-        units: Some(ctx.db.unit().iter().collect()),
-        obstacles: Some(ctx.db.obstacle().iter().collect()),
-        underlays: Some(ctx.db.underlay().iter().collect()),
-        overlays: Some(ctx.db.overlay().iter().collect()),
+        game_state: Some(GameState {
+            terrains: ctx.db.terrain().iter().collect(),
+            units: ctx.db.unit().iter().collect(),
+            obstacles: ctx.db.obstacle().iter().collect(),
+            underlays: ctx.db.underlay().iter().collect(),
+            overlays: ctx.db.overlay().iter().collect()
+        }),
         created_at: Some(ctx.timestamp),
         updated_at: Some(ctx.timestamp)
     });
@@ -397,11 +409,7 @@ pub fn chat_message(ctx: &ReducerContext, message: String) {
         action_type: "CHAT_MESSAGE".to_string(),
         description: message,
         timestamp: ctx.timestamp,
-        terrains: None,
-        units: None,
-        obstacles: None,
-        underlays: None,
-        overlays: None,
+        game_state: None,
         created_at: Some(ctx.timestamp),
         updated_at: Some(ctx.timestamp),
     });
