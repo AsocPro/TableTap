@@ -153,8 +153,8 @@ export class Renderer {
         
         // Draw the circle
         ctx.beginPath();
-        const centerX = unit.x + unit.size/2;
-        const centerY = unit.y + unit.size/2;
+        const centerX = unit.x;
+        const centerY = unit.y;
         const radius = unit.size/2;
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.fill();

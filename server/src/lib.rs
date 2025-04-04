@@ -200,6 +200,17 @@ pub fn add_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32, size
 #[spacetimedb::reducer]
 pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
     if let Some(unit) = ctx.db.unit().id().find(unit_id) {
+        // Check for collisions with canvas boundaries
+        let unit_radius = unit.size / 2;
+        let canvas_width = 600; // Match your canvas width
+        let canvas_height = 400; // Match your canvas height
+        
+        // Check if unit would go outside canvas boundaries
+        if new_x < unit_radius || new_x > canvas_width - unit_radius ||
+           new_y < unit_radius || new_y > canvas_height - unit_radius {
+            return; // Don't move if it would go outside canvas
+        }
+
         // Check for collisions with other units
         let mut will_collide = false;
         
@@ -210,10 +221,10 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
             }
 
             // Calculate distance between centers of circles
-            let unit_center_x = other_unit.x + other_unit.size/2;
-            let unit_center_y = other_unit.y + other_unit.size/2;
-            let new_center_x = new_x + unit.size/2;
-            let new_center_y = new_y + unit.size/2;
+            let unit_center_x = other_unit.x;
+            let unit_center_y = other_unit.y;
+            let new_center_x = new_x;
+            let new_center_y = new_y;
             
             let dx = new_center_x - unit_center_x;
             let dy = new_center_y - unit_center_y;
@@ -229,9 +240,8 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
         
         // Check collision with obstacles if no unit collision found
         if !will_collide {
-            let unit_radius = unit.size / 2;
-            let unit_center_x = new_x + unit_radius;
-            let unit_center_y = new_y + unit_radius;
+            let unit_center_x = new_x;
+            let unit_center_y = new_y;
             
             for obstacle in ctx.db.obstacle().iter() {
                 // Check if circle intersects with rectangle

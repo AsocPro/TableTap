@@ -12,17 +12,29 @@ export function handleInput(
     let startX = 0;
     let startY = 0;
 
-    canvas.addEventListener('mousedown', (e) => {
+    function startMove(event: MouseEvent | TouchEvent) {
         if (isHistoricalView()) return; // Don't allow interaction in historical view
+        event.preventDefault();
         
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        let x: number;
+        let y: number;
+
+        if ('touches' in event && event.touches.length > 0) {
+            const touch = event.touches[0]!;
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+        } else if (event instanceof MouseEvent) {
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
+        } else {
+            return;
+        }
 
         // Check if click is on a unit
         for (const unit of units.values()) {
-            const centerX = unit.x + unit.size/2;
-            const centerY = unit.y + unit.size/2;
+            const centerX = unit.x;
+            const centerY = unit.y;
             const distance = Math.sqrt(
                 Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
             );
@@ -35,29 +47,48 @@ export function handleInput(
                 break;
             }
         }
-    });
+    }
 
-    canvas.addEventListener('mousemove', (e) => {
+    function moveUnit(event: MouseEvent | TouchEvent) {
         if (isHistoricalView()) return; // Don't allow interaction in historical view
+        if (!selectedUnit) return;
         
-        if (isDragging && selectedUnit) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+        const rect = canvas.getBoundingClientRect();
+        let x: number;
+        let y: number;
 
-            const newX = x - startX;
-            const newY = y - startY;
-
-            // Move the unit
-            dbConnection.reducers.moveUnit(selectedUnit.id, newX, newY);
+        if ('touches' in event && event.touches.length > 0) {
+            const touch = event.touches[0]!;
+            x = touch.clientX - rect.left;
+            y = touch.clientY - rect.top;
+        } else if (event instanceof MouseEvent) {
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
+        } else {
+            return;
         }
-    });
 
-    canvas.addEventListener('mouseup', () => {
+        const newX = x - startX;
+        const newY = y - startY;
+
+        // Move the unit
+        dbConnection.reducers.moveUnit(selectedUnit.id, newX, newY);
+    }
+
+    function stopMove() {
         if (isHistoricalView()) return; // Don't allow interaction in historical view
-        
         selectedUnit = null;
         isDragging = false;
-    });
+    }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', startMove);
+    document.addEventListener('mousemove', moveUnit);
+    document.addEventListener('mouseup', stopMove);
+
+    // Touch events
+    canvas.addEventListener('touchstart', startMove, { passive: false });
+    document.addEventListener('touchmove', moveUnit, { passive: false });
+    document.addEventListener('touchend', stopMove);
 }
 
