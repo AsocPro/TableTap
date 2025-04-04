@@ -61,6 +61,8 @@ import { DeleteUnderlay } from "./delete_underlay_reducer.ts";
 export { DeleteUnderlay };
 import { DeleteUnit } from "./delete_unit_reducer.ts";
 export { DeleteUnit };
+import { HandleMouseEvent } from "./handle_mouse_event_reducer.ts";
+export { HandleMouseEvent };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
@@ -77,6 +79,8 @@ import { ObstacleTableHandle } from "./obstacle_table.ts";
 export { ObstacleTableHandle };
 import { OverlayTableHandle } from "./overlay_table.ts";
 export { OverlayTableHandle };
+import { SelectedUnitTableHandle } from "./selected_unit_table.ts";
+export { SelectedUnitTableHandle };
 import { TerrainTableHandle } from "./terrain_table.ts";
 export { TerrainTableHandle };
 import { UnderlayTableHandle } from "./underlay_table.ts";
@@ -91,6 +95,8 @@ import { Obstacle } from "./obstacle_type.ts";
 export { Obstacle };
 import { Overlay } from "./overlay_type.ts";
 export { Overlay };
+import { SelectedUnit } from "./selected_unit_type.ts";
+export { SelectedUnit };
 import { ShapeType } from "./shape_type_type.ts";
 export { ShapeType };
 import { Terrain } from "./terrain_type.ts";
@@ -117,6 +123,11 @@ const REMOTE_MODULE = {
     overlay: {
       tableName: "overlay",
       rowType: Overlay.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
+    selected_unit: {
+      tableName: "selected_unit",
+      rowType: SelectedUnit.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     terrain: {
@@ -188,6 +199,10 @@ const REMOTE_MODULE = {
       reducerName: "delete_unit",
       argsType: DeleteUnit.getTypeScriptAlgebraicType(),
     },
+    handle_mouse_event: {
+      reducerName: "handle_mouse_event",
+      argsType: HandleMouseEvent.getTypeScriptAlgebraicType(),
+    },
     identity_connected: {
       reducerName: "identity_connected",
       argsType: IdentityConnected.getTypeScriptAlgebraicType(),
@@ -244,6 +259,7 @@ export type Reducer = never
 | { name: "DeleteTerrain", args: DeleteTerrain }
 | { name: "DeleteUnderlay", args: DeleteUnderlay }
 | { name: "DeleteUnit", args: DeleteUnit }
+| { name: "HandleMouseEvent", args: HandleMouseEvent }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "MoveUnit", args: MoveUnit }
@@ -457,6 +473,22 @@ export class RemoteReducers {
     this.connection.offReducer("delete_unit", callback);
   }
 
+  handleMouseEvent(eventType: string, x: number, y: number, offsetX: number, offsetY: number) {
+    const __args = { eventType, x, y, offsetX, offsetY };
+    let __writer = new BinaryWriter(1024);
+    HandleMouseEvent.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("handle_mouse_event", __argsBuffer, this.setCallReducerFlags.handleMouseEventFlags);
+  }
+
+  onHandleMouseEvent(callback: (ctx: ReducerEventContext, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
+    this.connection.onReducer("handle_mouse_event", callback);
+  }
+
+  removeOnHandleMouseEvent(callback: (ctx: ReducerEventContext, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
+    this.connection.offReducer("handle_mouse_event", callback);
+  }
+
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
   }
@@ -569,6 +601,11 @@ export class SetReducerFlags {
     this.deleteUnitFlags = flags;
   }
 
+  handleMouseEventFlags: CallReducerFlags = 'FullUpdate';
+  handleMouseEvent(flags: CallReducerFlags) {
+    this.handleMouseEventFlags = flags;
+  }
+
   moveUnitFlags: CallReducerFlags = 'FullUpdate';
   moveUnit(flags: CallReducerFlags) {
     this.moveUnitFlags = flags;
@@ -594,6 +631,10 @@ export class RemoteTables {
 
   get overlay(): OverlayTableHandle {
     return new OverlayTableHandle(this.connection.clientCache.getOrCreateTable<Overlay>(REMOTE_MODULE.tables.overlay));
+  }
+
+  get selectedUnit(): SelectedUnitTableHandle {
+    return new SelectedUnitTableHandle(this.connection.clientCache.getOrCreateTable<SelectedUnit>(REMOTE_MODULE.tables.selected_unit));
   }
 
   get terrain(): TerrainTableHandle {

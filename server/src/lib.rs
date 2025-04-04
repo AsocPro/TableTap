@@ -458,3 +458,107 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
         log::error!("Failed to delete overlay: ID {} not found", overlay_id);
     }
 }
+
+#[spacetimedb::reducer]
+pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i32, offset_x: i32, offset_y: i32) {
+    match event_type.as_str() {
+        "mousedown" => {
+            // Find unit under cursor
+            for unit in ctx.db.unit().iter() {
+                let center_x = unit.x;
+                let center_y = unit.y;
+                let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
+                
+                if distance <= (unit.size/2).pow(2) as f64 {
+                    // Store selected unit in a new table
+                    ctx.db.selected_unit().insert(SelectedUnit { 
+                        id: unit.id,
+                        start_x: x,
+                        start_y: y,
+                        offset_x: 0,
+                        offset_y: 0
+                    });
+                    break;
+                }
+            }
+        }
+        "mousemove" => {
+            if let Some(selected) = ctx.db.selected_unit().iter().next() {
+                if let Some(unit) = ctx.db.unit().id().find(selected.id) {
+                    // Calculate new position based on offset
+                    let new_x = unit.x + offset_x;
+                    let new_y = unit.y + offset_y;
+                    
+                    // Check for collisions with canvas boundaries
+                    let unit_radius = unit.size / 2;
+                    let canvas_width = 600;
+                    let canvas_height = 400;
+                    
+                    if new_x >= unit_radius && new_x <= canvas_width - unit_radius &&
+                       new_y >= unit_radius && new_y <= canvas_height - unit_radius {
+                        // Check for collisions with other units
+                        let mut will_collide = false;
+                        
+                        for other_unit in ctx.db.unit().iter() {
+                            if other_unit.id == unit.id {
+                                continue;
+                            }
+
+                            let dx = new_x - other_unit.x;
+                            let dy = new_y - other_unit.y;
+                            let distance_squared = dx * dx + dy * dy;
+                            
+                            let min_distance = (unit.size + other_unit.size) / 2;
+                            if distance_squared < min_distance * min_distance {
+                                will_collide = true;
+                                break;
+                            }
+                        }
+                        
+                        // Check collision with obstacles if no unit collision found
+                        if !will_collide {
+                            let unit_center_x = new_x;
+                            let unit_center_y = new_y;
+                            
+                            for obstacle in ctx.db.obstacle().iter() {
+                                let closest_x = unit_center_x.max(obstacle.x).min(obstacle.x + obstacle.length);
+                                let closest_y = unit_center_y.max(obstacle.y).min(obstacle.y + obstacle.height);
+                                
+                                let dx = unit_center_x - closest_x;
+                                let dy = unit_center_y - closest_y;
+                                let distance_squared = dx * dx + dy * dy;
+                                
+                                if distance_squared < unit_radius * unit_radius {
+                                    will_collide = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Only move if there's no collision
+                        if !will_collide {
+                            ctx.db.unit().id().update(Unit { x: new_x, y: new_y, ..unit });
+                        }
+                    }
+                }
+            }
+        }
+        "mouseup" => {
+            // Clear selected unit
+            for selected in ctx.db.selected_unit().iter() {
+                ctx.db.selected_unit().id().delete(selected.id);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[spacetimedb::table(name = selected_unit, public)]
+pub struct SelectedUnit {
+    #[primary_key]
+    id: u64,
+    start_x: i32,
+    start_y: i32,
+    offset_x: i32,
+    offset_y: i32
+}

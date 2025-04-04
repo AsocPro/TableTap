@@ -7,13 +7,13 @@ export function handleInput(
     units: Map<number, Unit>,
     isHistoricalView: () => boolean
 ) {
-    let selectedUnit: Unit | null = null;
-    let isDragging = false;
     let startX = 0;
     let startY = 0;
+    let lastX = 0;
+    let lastY = 0;
 
     function startMove(event: MouseEvent | TouchEvent) {
-        if (isHistoricalView()) return; // Don't allow interaction in historical view
+        if (isHistoricalView()) return;
         event.preventDefault();
         
         const rect = canvas.getBoundingClientRect();
@@ -31,27 +31,18 @@ export function handleInput(
             return;
         }
 
-        // Check if click is on a unit
-        for (const unit of units.values()) {
-            const centerX = unit.x;
-            const centerY = unit.y;
-            const distance = Math.sqrt(
-                Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
-            );
+        startX = x;
+        startY = y;
+        lastX = x;
+        lastY = y;
 
-            if (distance <= unit.size/2) {
-                selectedUnit = unit;
-                isDragging = true;
-                startX = x - unit.x;
-                startY = y - unit.y;
-                break;
-            }
-        }
+        // Send mousedown event to server
+        dbConnection.reducers.handleMouseEvent("mousedown", x, y, 0, 0);
     }
 
     function moveUnit(event: MouseEvent | TouchEvent) {
-        if (isHistoricalView()) return; // Don't allow interaction in historical view
-        if (!selectedUnit) return;
+        if (isHistoricalView()) return;
+        event.preventDefault();
         
         const rect = canvas.getBoundingClientRect();
         let x: number;
@@ -68,17 +59,21 @@ export function handleInput(
             return;
         }
 
-        const newX = x - startX;
-        const newY = y - startY;
+        // Calculate offset from last position
+        const offsetX = x - lastX;
+        const offsetY = y - lastY;
+        lastX = x;
+        lastY = y;
 
-        // Move the unit
-        dbConnection.reducers.moveUnit(selectedUnit.id, newX, newY);
+        // Send mousemove event to server
+        dbConnection.reducers.handleMouseEvent("mousemove", x, y, offsetX, offsetY);
     }
 
     function stopMove() {
-        if (isHistoricalView()) return; // Don't allow interaction in historical view
-        selectedUnit = null;
-        isDragging = false;
+        if (isHistoricalView()) return;
+        
+        // Send mouseup event to server
+        dbConnection.reducers.handleMouseEvent("mouseup", lastX, lastY, 0, 0);
     }
 
     // Mouse events
