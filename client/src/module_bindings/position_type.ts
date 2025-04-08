@@ -34,31 +34,34 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type DeleteObstacle = {
-  obstacleId: bigint,
+export type Position = {
+  x: number,
+  y: number,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace DeleteObstacle {
+export namespace Position {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("obstacleId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("x", AlgebraicType.createU32Type()),
+      new ProductTypeElement("y", AlgebraicType.createU32Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: DeleteObstacle): void {
-    DeleteObstacle.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: Position): void {
+    Position.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): DeleteObstacle {
-    return DeleteObstacle.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): Position {
+    return Position.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
+
 

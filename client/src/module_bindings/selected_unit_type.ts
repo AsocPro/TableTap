@@ -52,10 +52,10 @@ export namespace SelectedUnit {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("startX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("startY", AlgebraicType.createI32Type()),
-      new ProductTypeElement("offsetX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("offsetY", AlgebraicType.createI32Type()),
+      new ProductTypeElement("startX", AlgebraicType.createU32Type()),
+      new ProductTypeElement("startY", AlgebraicType.createU32Type()),
+      new ProductTypeElement("offsetX", AlgebraicType.createU32Type()),
+      new ProductTypeElement("offsetY", AlgebraicType.createU32Type()),
     ]);
   }
 

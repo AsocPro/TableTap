@@ -34,16 +34,14 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { ShapeType as __ShapeType } from "./shape_type_type";
-import { Vec2 as __Vec2 } from "./vec_2_type";
+import { Position as __Position } from "./position_type";
 
 export type Underlay = {
   id: bigint,
   shapeType: __ShapeType,
-  size: number,
+  size: number[],
   color: string,
-  position: __Vec2[],
-  createdAt: Timestamp | undefined,
-  updatedAt: Timestamp | undefined,
+  position: __Position[],
 };
 
 /**
@@ -58,11 +56,9 @@ export namespace Underlay {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
       new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
-      new ProductTypeElement("size", AlgebraicType.createU32Type()),
+      new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
       new ProductTypeElement("color", AlgebraicType.createStringType()),
-      new ProductTypeElement("position", AlgebraicType.createArrayType(__Vec2.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("createdAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
-      new ProductTypeElement("updatedAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
+      new ProductTypeElement("position", AlgebraicType.createArrayType(__Position.getTypeScriptAlgebraicType())),
     ]);
   }
 

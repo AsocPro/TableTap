@@ -52,8 +52,8 @@ export namespace MoveUnit {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("unitId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("newX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("newY", AlgebraicType.createI32Type()),
+      new ProductTypeElement("newX", AlgebraicType.createU32Type()),
+      new ProductTypeElement("newY", AlgebraicType.createU32Type()),
     ]);
   }
 

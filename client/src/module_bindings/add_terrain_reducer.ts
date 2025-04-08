@@ -33,13 +33,14 @@ import type {
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
+import { Position as __Position } from "./position_type";
 
 export type AddTerrain = {
   terrainId: bigint,
-  newX: number,
-  newY: number,
-  length: number,
-  height: number,
+  size: number[],
+  color: string,
+  position: __Position[],
+  traversable: boolean,
 };
 
 /**
@@ -53,10 +54,10 @@ export namespace AddTerrain {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("terrainId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("newX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("newY", AlgebraicType.createI32Type()),
-      new ProductTypeElement("length", AlgebraicType.createI32Type()),
-      new ProductTypeElement("height", AlgebraicType.createI32Type()),
+      new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("color", AlgebraicType.createStringType()),
+      new ProductTypeElement("position", AlgebraicType.createArrayType(__Position.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("traversable", AlgebraicType.createBoolType()),
     ]);
   }
 

@@ -33,13 +33,15 @@ import type {
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
+import { ShapeType as __ShapeType } from "./shape_type_type";
+import { Position as __Position } from "./position_type";
 
 export type Unit = {
   id: bigint,
-  x: number,
-  y: number,
-  size: number,
+  shapeType: __ShapeType,
+  size: number[],
   color: string,
+  position: __Position[],
 };
 
 /**
@@ -53,10 +55,10 @@ export namespace Unit {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("x", AlgebraicType.createI32Type()),
-      new ProductTypeElement("y", AlgebraicType.createI32Type()),
-      new ProductTypeElement("size", AlgebraicType.createI32Type()),
+      new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
+      new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
       new ProductTypeElement("color", AlgebraicType.createStringType()),
+      new ProductTypeElement("position", AlgebraicType.createArrayType(__Position.getTypeScriptAlgebraicType())),
     ]);
   }
 

@@ -39,8 +39,6 @@ export type Action = {
   actionType: string,
   description: string,
   gameState: __GameState | undefined,
-  createdAt: Timestamp | undefined,
-  updatedAt: Timestamp | undefined,
 };
 
 /**
@@ -57,8 +55,6 @@ export namespace Action {
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("gameState", AlgebraicType.createOptionType(__GameState.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("createdAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
-      new ProductTypeElement("updatedAt", AlgebraicType.createOptionType(AlgebraicType.createTimestampType())),
     ]);
   }
 

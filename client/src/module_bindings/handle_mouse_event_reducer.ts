@@ -53,10 +53,10 @@ export namespace HandleMouseEvent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("eventType", AlgebraicType.createStringType()),
-      new ProductTypeElement("x", AlgebraicType.createI32Type()),
-      new ProductTypeElement("y", AlgebraicType.createI32Type()),
-      new ProductTypeElement("offsetX", AlgebraicType.createI32Type()),
-      new ProductTypeElement("offsetY", AlgebraicType.createI32Type()),
+      new ProductTypeElement("x", AlgebraicType.createU32Type()),
+      new ProductTypeElement("y", AlgebraicType.createU32Type()),
+      new ProductTypeElement("offsetX", AlgebraicType.createU32Type()),
+      new ProductTypeElement("offsetY", AlgebraicType.createU32Type()),
     ]);
   }
 

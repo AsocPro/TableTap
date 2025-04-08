@@ -34,6 +34,9 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Terrain } from "./terrain_type";
+import { ShapeType as __ShapeType } from "./shape_type_type";
+import { Position as __Position } from "./position_type";
+
 import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**

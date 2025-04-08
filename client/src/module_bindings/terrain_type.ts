@@ -23,6 +23,8 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
+import { ShapeType as __ShapeType } from "./shape_type_type";
+import { Position as __Position } from "./position_type";
 
 import type {
   CallReducerFlags,
@@ -35,10 +37,11 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 export type Terrain = {
   id: bigint,
-  x: number,
-  y: number,
-  length: number,
-  height: number,
+  shapeType: __ShapeType,
+  size: number[],
+  color: string,
+  position: __Position[],
+  traversable: boolean,
 };
 
 /**
@@ -52,10 +55,11 @@ export namespace Terrain {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("x", AlgebraicType.createI32Type()),
-      new ProductTypeElement("y", AlgebraicType.createI32Type()),
-      new ProductTypeElement("length", AlgebraicType.createI32Type()),
-      new ProductTypeElement("height", AlgebraicType.createI32Type()),
+      new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
+      new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("color", AlgebraicType.createStringType()),
+      new ProductTypeElement("position", AlgebraicType.createArrayType(__Position.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("traversable", AlgebraicType.createBoolType()),
     ]);
   }
 

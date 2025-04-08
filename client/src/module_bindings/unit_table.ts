@@ -31,13 +31,15 @@ import type {
   Event,
   EventContext,
   EventContextInterface,
-  Reducer,
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
 import { Unit } from "./unit_type";
-import {  RemoteReducers, RemoteTables } from ".";
+import { ShapeType as __ShapeType } from "./shape_type_type";
+import { Position as __Position } from "./position_type";
+
+import type { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
  * Table handle for the table `unit`.

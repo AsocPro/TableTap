@@ -35,8 +35,6 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { AddObstacle } from "./add_obstacle_reducer.ts";
-export { AddObstacle };
 import { AddOverlay } from "./add_overlay_reducer.ts";
 export { AddOverlay };
 import { AddTerrain } from "./add_terrain_reducer.ts";
@@ -51,8 +49,6 @@ import { DeleteAll } from "./delete_all_reducer.ts";
 export { DeleteAll };
 import { DeleteAtCoordinates } from "./delete_at_coordinates_reducer.ts";
 export { DeleteAtCoordinates };
-import { DeleteObstacle } from "./delete_obstacle_reducer.ts";
-export { DeleteObstacle };
 import { DeleteOverlay } from "./delete_overlay_reducer.ts";
 export { DeleteOverlay };
 import { DeleteTerrain } from "./delete_terrain_reducer.ts";
@@ -75,8 +71,6 @@ export { RollDice };
 // Import and reexport all table handle types
 import { ActionTableHandle } from "./action_table.ts";
 export { ActionTableHandle };
-import { ObstacleTableHandle } from "./obstacle_table.ts";
-export { ObstacleTableHandle };
 import { OverlayTableHandle } from "./overlay_table.ts";
 export { OverlayTableHandle };
 import { SelectedUnitTableHandle } from "./selected_unit_table.ts";
@@ -93,10 +87,10 @@ import { Action } from "./action_type.ts";
 export { Action };
 import { GameState } from "./game_state_type.ts";
 export { GameState };
-import { Obstacle } from "./obstacle_type.ts";
-export { Obstacle };
 import { Overlay } from "./overlay_type.ts";
 export { Overlay };
+import { Position } from "./position_type.ts";
+export { Position };
 import { SelectedUnit } from "./selected_unit_type.ts";
 export { SelectedUnit };
 import { ShapeType } from "./shape_type_type.ts";
@@ -107,8 +101,6 @@ import { Underlay } from "./underlay_type.ts";
 export { Underlay };
 import { Unit } from "./unit_type.ts";
 export { Unit };
-import { Vec2 } from "./vec_2_type.ts";
-export { Vec2 };
 
 const REMOTE_MODULE = {
   tables: {
@@ -116,11 +108,6 @@ const REMOTE_MODULE = {
       tableName: "action",
       rowType: Action.getTypeScriptAlgebraicType(),
       primaryKey: "timestamp",
-    },
-    obstacle: {
-      tableName: "obstacle",
-      rowType: Obstacle.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
     },
     overlay: {
       tableName: "overlay",
@@ -149,10 +136,6 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    add_obstacle: {
-      reducerName: "add_obstacle",
-      argsType: AddObstacle.getTypeScriptAlgebraicType(),
-    },
     add_overlay: {
       reducerName: "add_overlay",
       argsType: AddOverlay.getTypeScriptAlgebraicType(),
@@ -180,10 +163,6 @@ const REMOTE_MODULE = {
     delete_at_coordinates: {
       reducerName: "delete_at_coordinates",
       argsType: DeleteAtCoordinates.getTypeScriptAlgebraicType(),
-    },
-    delete_obstacle: {
-      reducerName: "delete_obstacle",
-      argsType: DeleteObstacle.getTypeScriptAlgebraicType(),
     },
     delete_overlay: {
       reducerName: "delete_overlay",
@@ -248,7 +227,6 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "AddObstacle", args: AddObstacle }
 | { name: "AddOverlay", args: AddOverlay }
 | { name: "AddTerrain", args: AddTerrain }
 | { name: "AddUnderlay", args: AddUnderlay }
@@ -256,7 +234,6 @@ export type Reducer = never
 | { name: "ChatMessage", args: ChatMessage }
 | { name: "DeleteAll", args: DeleteAll }
 | { name: "DeleteAtCoordinates", args: DeleteAtCoordinates }
-| { name: "DeleteObstacle", args: DeleteObstacle }
 | { name: "DeleteOverlay", args: DeleteOverlay }
 | { name: "DeleteTerrain", args: DeleteTerrain }
 | { name: "DeleteUnderlay", args: DeleteUnderlay }
@@ -271,23 +248,7 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addObstacle(obstacleId: bigint, newX: number, newY: number, length: number, height: number) {
-    const __args = { obstacleId, newX, newY, length, height };
-    let __writer = new BinaryWriter(1024);
-    AddObstacle.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_obstacle", __argsBuffer, this.setCallReducerFlags.addObstacleFlags);
-  }
-
-  onAddObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint, newX: number, newY: number, length: number, height: number) => void) {
-    this.connection.onReducer("add_obstacle", callback);
-  }
-
-  removeOnAddObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint, newX: number, newY: number, length: number, height: number) => void) {
-    this.connection.offReducer("add_obstacle", callback);
-  }
-
-  addOverlay(overlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) {
+  addOverlay(overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
     const __args = { overlayId, shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddOverlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
@@ -295,31 +256,31 @@ export class RemoteReducers {
     this.connection.callReducer("add_overlay", __argsBuffer, this.setCallReducerFlags.addOverlayFlags);
   }
 
-  onAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) => void) {
+  onAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_overlay", callback);
   }
 
-  removeOnAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) => void) {
+  removeOnAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_overlay", callback);
   }
 
-  addTerrain(terrainId: bigint, newX: number, newY: number, length: number, height: number) {
-    const __args = { terrainId, newX, newY, length, height };
+  addTerrain(terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) {
+    const __args = { terrainId, size, color, position, traversable };
     let __writer = new BinaryWriter(1024);
     AddTerrain.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_terrain", __argsBuffer, this.setCallReducerFlags.addTerrainFlags);
   }
 
-  onAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+  onAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.onReducer("add_terrain", callback);
   }
 
-  removeOnAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, newX: number, newY: number, length: number, height: number) => void) {
+  removeOnAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.offReducer("add_terrain", callback);
   }
 
-  addUnderlay(underlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) {
+  addUnderlay(underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
     const __args = { underlayId, shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnderlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
@@ -327,27 +288,27 @@ export class RemoteReducers {
     this.connection.callReducer("add_underlay", __argsBuffer, this.setCallReducerFlags.addUnderlayFlags);
   }
 
-  onAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) => void) {
+  onAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_underlay", callback);
   }
 
-  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number, color: string, position: Vec2[]) => void) {
+  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_underlay", callback);
   }
 
-  addUnit(unitId: bigint, newX: number, newY: number, size: number, color: string) {
-    const __args = { unitId, newX, newY, size, color };
+  addUnit(unitId: bigint, size: number[], color: string, position: Position[]) {
+    const __args = { unitId, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
   }
 
-  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
+  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_unit", callback);
   }
 
-  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number, size: number, color: string) => void) {
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_unit", callback);
   }
 
@@ -393,22 +354,6 @@ export class RemoteReducers {
 
   removeOnDeleteAtCoordinates(callback: (ctx: ReducerEventContext, x: number, y: number) => void) {
     this.connection.offReducer("delete_at_coordinates", callback);
-  }
-
-  deleteObstacle(obstacleId: bigint) {
-    const __args = { obstacleId };
-    let __writer = new BinaryWriter(1024);
-    DeleteObstacle.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("delete_obstacle", __argsBuffer, this.setCallReducerFlags.deleteObstacleFlags);
-  }
-
-  onDeleteObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint) => void) {
-    this.connection.onReducer("delete_obstacle", callback);
-  }
-
-  removeOnDeleteObstacle(callback: (ctx: ReducerEventContext, obstacleId: bigint) => void) {
-    this.connection.offReducer("delete_obstacle", callback);
   }
 
   deleteOverlay(overlayId: bigint) {
@@ -538,11 +483,6 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  addObstacleFlags: CallReducerFlags = 'FullUpdate';
-  addObstacle(flags: CallReducerFlags) {
-    this.addObstacleFlags = flags;
-  }
-
   addOverlayFlags: CallReducerFlags = 'FullUpdate';
   addOverlay(flags: CallReducerFlags) {
     this.addOverlayFlags = flags;
@@ -576,11 +516,6 @@ export class SetReducerFlags {
   deleteAtCoordinatesFlags: CallReducerFlags = 'FullUpdate';
   deleteAtCoordinates(flags: CallReducerFlags) {
     this.deleteAtCoordinatesFlags = flags;
-  }
-
-  deleteObstacleFlags: CallReducerFlags = 'FullUpdate';
-  deleteObstacle(flags: CallReducerFlags) {
-    this.deleteObstacleFlags = flags;
   }
 
   deleteOverlayFlags: CallReducerFlags = 'FullUpdate';
@@ -625,10 +560,6 @@ export class RemoteTables {
 
   get action(): ActionTableHandle {
     return new ActionTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.action));
-  }
-
-  get obstacle(): ObstacleTableHandle {
-    return new ObstacleTableHandle(this.connection.clientCache.getOrCreateTable<Obstacle>(REMOTE_MODULE.tables.obstacle));
   }
 
   get overlay(): OverlayTableHandle {

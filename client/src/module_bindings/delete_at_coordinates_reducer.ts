@@ -49,8 +49,8 @@ export namespace DeleteAtCoordinates {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("x", AlgebraicType.createI32Type()),
-      new ProductTypeElement("y", AlgebraicType.createI32Type()),
+      new ProductTypeElement("x", AlgebraicType.createU32Type()),
+      new ProductTypeElement("y", AlgebraicType.createU32Type()),
     ]);
   }
 

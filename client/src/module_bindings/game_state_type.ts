@@ -25,7 +25,6 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 import { Terrain as __Terrain } from "./terrain_type";
 import { Unit as __Unit } from "./unit_type";
-import { Obstacle as __Obstacle } from "./obstacle_type";
 import { Underlay as __Underlay } from "./underlay_type";
 import { Overlay as __Overlay } from "./overlay_type";
 import type {
@@ -41,7 +40,6 @@ import type {
 export type GameState = {
   terrains: __Terrain[],
   units: __Unit[],
-  obstacles: __Obstacle[],
   underlays: __Underlay[],
   overlays: __Overlay[],
 };
@@ -58,7 +56,6 @@ export namespace GameState {
     return AlgebraicType.createProductType([
       new ProductTypeElement("terrains", AlgebraicType.createArrayType(__Terrain.getTypeScriptAlgebraicType())),
       new ProductTypeElement("units", AlgebraicType.createArrayType(__Unit.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("obstacles", AlgebraicType.createArrayType(__Obstacle.getTypeScriptAlgebraicType())),
       new ProductTypeElement("underlays", AlgebraicType.createArrayType(__Underlay.getTypeScriptAlgebraicType())),
       new ProductTypeElement("overlays", AlgebraicType.createArrayType(__Overlay.getTypeScriptAlgebraicType())),
     ]);
