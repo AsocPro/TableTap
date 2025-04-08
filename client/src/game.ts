@@ -1,7 +1,7 @@
 import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
-import type { EventContext, Unit, Terrain, Obstacle, Underlay, Overlay, GameState } from './module_bindings';
+import type { EventContext, Unit, Terrain, Underlay, Overlay, GameState } from './module_bindings';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
@@ -38,7 +38,6 @@ export class Game {
                     })
                     .subscribe([
                         "SELECT * FROM unit", 
-                        "SELECT * FROM obstacle", 
                         "SELECT * FROM terrain", 
                         "SELECT * FROM action",
                         "SELECT * FROM underlay",
@@ -51,7 +50,6 @@ export class Game {
         this.currentGameState = {
             terrains: [],
             units: [],
-            obstacles: [],
             underlays: [],
             overlays: []
         };
@@ -120,23 +118,6 @@ export class Game {
         }
         this.dbConnection.db.unit.onDelete(unitDeleteCallback);
         
-        // Handle obstacle data
-        const obstacleCallback = (_ctx: EventContext, obstacle: Obstacle) => {
-            const index = this.currentGameState.obstacles.findIndex(o => o.id === obstacle.id);
-            if (index >= 0) {
-                this.currentGameState.obstacles[index] = obstacle;
-            } else {
-                this.currentGameState.obstacles.push(obstacle);
-            }
-        }
-        this.dbConnection.db.obstacle.onInsert(obstacleCallback);
-        this.dbConnection.db.obstacle.onUpdate(obstacleCallback);
-        
-        const obstacleDeleteCallback = (_ctx: EventContext, obstacle: Obstacle) => {
-            this.currentGameState.obstacles = this.currentGameState.obstacles.filter(o => o.id !== obstacle.id);
-        }
-        this.dbConnection.db.obstacle.onDelete(obstacleDeleteCallback);
-        
         // Handle terrain data
         const terrainCallback = (_ctx: EventContext, terrain: Terrain) => {
             const index = this.currentGameState.terrains.findIndex(t => t.id === terrain.id);
@@ -190,8 +171,8 @@ export class Game {
         
         // Handle action data to extract game states
         const actionCallback = (_ctx: EventContext, action: any) => {
-            if (action.gameState) {
-                this.actionStates.set(action.timestamp, action.gameState);
+            if (action.game_state) {
+                this.actionStates.set(action.timestamp, action.game_state);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);

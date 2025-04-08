@@ -1,4 +1,4 @@
-import type { GameState, Unit, Terrain, Obstacle, Underlay, Overlay } from "./module_bindings";
+import type { GameState, Unit, Terrain, Underlay, Overlay } from "./module_bindings";
 import { ShapeType } from "./module_bindings";
 
 export class Renderer {
@@ -24,7 +24,6 @@ export class Renderer {
         this.clearCanvases();
         this.drawUnderlays(gameState.underlays);
         this.drawTerrain(gameState.terrains);
-        this.drawObstacles(gameState.obstacles);
         this.drawUnits(gameState.units);
         this.drawOverlays(gameState.overlays);
     }
@@ -48,31 +47,19 @@ export class Renderer {
     private drawTerrainItem(terrain: Terrain) {
         // Get terrain layer context
         const ctx = this.contexts.terrain;
-        ctx.fillStyle = "#8fbc8f"; // Dark sea green for terrain
+        ctx.fillStyle = terrain.color;
         ctx.strokeStyle = "#2e8b57"; // Sea green for terrain border
         ctx.lineWidth = 2;
         
         // Draw the rectangle
-        ctx.fillRect(terrain.x, terrain.y, terrain.length, terrain.height);
-        ctx.strokeRect(terrain.x, terrain.y, terrain.length, terrain.height);
-    }
-
-    private drawObstacles(obstacles: Obstacle[]) {
-        for (const obstacle of obstacles) {
-            this.drawObstacleItem(obstacle);
+        if (terrain.position.length >= 2) {
+            const start = terrain.position[0];
+            const end = terrain.position[1];
+            const width = end.x - start.x;
+            const height = end.y - start.y;
+            ctx.fillRect(start.x, start.y, width, height);
+            ctx.strokeRect(start.x, start.y, width, height);
         }
-    }
-    
-    private drawObstacleItem(obstacle: Obstacle) {
-        // Get obstacle layer context
-        const ctx = this.contexts.underlay;
-        ctx.fillStyle = "#a0522d"; // Sienna for obstacles
-        ctx.strokeStyle = "#8b4513"; // Saddle brown for obstacle border
-        ctx.lineWidth = 2;
-        
-        // Draw the rectangle
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.length, obstacle.height);
-        ctx.strokeRect(obstacle.x, obstacle.y, obstacle.length, obstacle.height);
     }
 
     private drawUnits(units: Unit[]) {
@@ -91,13 +78,14 @@ export class Renderer {
         ctx.lineWidth = 2;
         
         // Draw the circle
-        ctx.beginPath();
-        const centerX = unit.x;
-        const centerY = unit.y;
-        const radius = unit.size/2;
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
+        if (unit.position.length > 0) {
+            const center = unit.position[0];
+            const radius = unit.size[0] / 2;
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
     }
 
     private drawUnderlays(underlays: Underlay[]) {
@@ -143,7 +131,7 @@ export class Renderer {
         const center = shape.position[0];
         if (!center) return;
         ctx.beginPath();
-        ctx.arc(center.x, center.y, shape.size / 2, 0, 2 * Math.PI);
+        ctx.arc(center.x, center.y, shape.size[0] / 2, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
     }
@@ -190,7 +178,7 @@ export class Renderer {
         if (shape.position.length < 1) return;
         const pos = shape.position[0];
         if (!pos) return;
-        ctx.font = `${shape.size}px Arial`;
+        ctx.font = `${shape.size[0]}px Arial`;
         ctx.fillText(shape.color, pos.x, pos.y);
     }
 }
