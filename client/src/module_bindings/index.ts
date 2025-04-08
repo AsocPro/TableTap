@@ -107,7 +107,7 @@ const REMOTE_MODULE = {
     action: {
       tableName: "action",
       rowType: Action.getTypeScriptAlgebraicType(),
-      primaryKey: "timestamp",
+      primaryKey: "id",
     },
     overlay: {
       tableName: "overlay",

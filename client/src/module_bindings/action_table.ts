@@ -62,6 +62,28 @@ export class ActionTableHandle {
   iter(): Iterable<Action> {
     return this.tableCache.iter();
   }
+  /**
+   * Access to the `id` unique index on the table `action`,
+   * which allows point queries on the field of the same name
+   * via the [`ActionIdUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.action.id().find(...)`.
+   *
+   * Get a handle on the `id` unique index on the table `action`.
+   */
+  id = {
+    // Find the subscribed row whose `id` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: bigint): Action | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (deepEqual(row.id, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
 
   onInsert = (cb: (ctx: EventContext, row: Action) => void) => {
     return this.tableCache.onInsert(cb);

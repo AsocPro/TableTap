@@ -2,7 +2,7 @@ import { Renderer } from "./renderer";
 import { handleInput } from "./input";
 import { DbConnection } from './module_bindings';
 import type { EventContext, Unit, Terrain, Underlay, Overlay, GameState } from './module_bindings';
-import { Identity } from '@clockworklabs/spacetimedb-sdk';
+import { Identity, Timestamp } from '@clockworklabs/spacetimedb-sdk';
 import { GameSetupTab } from './tabs/GameSetupTab';
 import { ActionsTab } from './tabs/ActionsTab';
 import { ActionLog } from './components/ActionLog';
@@ -24,8 +24,8 @@ export class Game {
     private currentGameState: GameState;
     private renderer: Renderer;
     private dbConnection: DbConnection;
-    private selectedAction: any = null;
-    private actionStates: Map<string, GameState> = new Map();
+    private selectedAction: number | null = null;
+    private actionStates: Map<number, GameState> = new Map();
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -109,12 +109,14 @@ export class Game {
             } else {
                 this.currentGameState.units.push(unit);
             }
+            this.renderUnits();
         }
         this.dbConnection.db.unit.onInsert(unitCallback);
         this.dbConnection.db.unit.onUpdate(unitCallback);
         
         const unitDeleteCallback = (_ctx: EventContext, unit: Unit) => {
             this.currentGameState.units = this.currentGameState.units.filter(u => u.id !== unit.id);
+            this.renderUnits();
         }
         this.dbConnection.db.unit.onDelete(unitDeleteCallback);
         
@@ -126,12 +128,14 @@ export class Game {
             } else {
                 this.currentGameState.terrains.push(terrain);
             }
+            this.renderTerrain();
         }
         this.dbConnection.db.terrain.onInsert(terrainCallback);
         this.dbConnection.db.terrain.onUpdate(terrainCallback);
         
         const terrainDeleteCallback = (_ctx: EventContext, terrain: Terrain) => {
             this.currentGameState.terrains = this.currentGameState.terrains.filter(t => t.id !== terrain.id);
+            this.renderTerrain();
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
@@ -143,12 +147,14 @@ export class Game {
             } else {
                 this.currentGameState.underlays.push(underlay);
             }
+            this.renderUnderlays();
         }
         this.dbConnection.db.underlay.onInsert(underlayCallback);
         this.dbConnection.db.underlay.onUpdate(underlayCallback);
         
         const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
             this.currentGameState.underlays = this.currentGameState.underlays.filter(u => u.id !== underlay.id);
+            this.renderUnderlays();
         }
         this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
         
@@ -160,19 +166,21 @@ export class Game {
             } else {
                 this.currentGameState.overlays.push(overlay);
             }
+            this.renderOverlays();
         }
         this.dbConnection.db.overlay.onInsert(overlayCallback);
         this.dbConnection.db.overlay.onUpdate(overlayCallback);
         
         const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
             this.currentGameState.overlays = this.currentGameState.overlays.filter(o => o.id !== overlay.id);
+            this.renderOverlays();
         }
         this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);
         
         // Handle action data to extract game states
         const actionCallback = (_ctx: EventContext, action: any) => {
-            if (action.game_state) {
-                this.actionStates.set(action.timestamp, action.game_state);
+            if (action.gameState) {
+                this.actionStates.set(action.id, action.gameState);
             }
         }
         this.dbConnection.db.action.onInsert(actionCallback);
@@ -190,19 +198,58 @@ export class Game {
         return canvas;
     }
 
-    start() {
-        this.update();
+    private renderTerrain() {
+        this.renderer.clearLayer('terrain');
+        this.renderer.drawShapes(this.ctx.terrain, this.currentGameState.terrains);
     }
 
-    update() {
-        if (this.selectedAction) {
-            // Draw from selected action state
-            this.renderer.draw(this.actionStates.get(this.selectedAction)!);
-        } else {
-            // Draw from live data
-            this.renderer.draw(this.currentGameState);
+    private renderUnits() {
+        this.renderer.clearLayer('units');
+        this.renderer.drawShapes(this.ctx.units, this.currentGameState.units);
+    }
+
+    private renderUnderlays() {
+        this.renderer.clearLayer('underlay');
+        this.renderer.drawShapes(this.ctx.underlay, this.currentGameState.underlays);
+    }
+
+    private renderOverlays() {
+        this.renderer.clearLayer('overlay');
+        this.renderer.drawShapes(this.ctx.overlay, this.currentGameState.overlays);
+    }
+
+    // Draw from a specific action state instead of live data
+    public drawFromGameState(actionId: number | null) {
+        if (actionId === null) {
+            // Reset to live data
+            this.selectedAction = null;
+            this.renderAllLayers();
+            return;
         }
-        requestAnimationFrame(() => this.update());
+        
+        if (this.actionStates.has(actionId)) {
+            this.selectedAction = actionId;
+            const gameState = this.actionStates.get(actionId)!;
+            this.renderer.clearAllLayers();
+            this.renderer.drawShapes(this.ctx.underlay, gameState.underlays);
+            this.renderer.drawShapes(this.ctx.terrain, gameState.terrains);
+            this.renderer.drawShapes(this.ctx.units, gameState.units);
+            this.renderer.drawShapes(this.ctx.overlay, gameState.overlays);
+        } else {
+            console.error(`Action with ID ${actionId} not found`);
+        }
+    }
+
+    private renderAllLayers() {
+        this.renderer.clearAllLayers();
+        this.renderTerrain();
+        this.renderUnits();
+        this.renderUnderlays();
+        this.renderOverlays();
+    }
+
+    start() {
+        this.renderAllLayers();
     }
 
     private createUI() {
@@ -310,21 +357,6 @@ export class Game {
             parent.appendChild(mainContainer);
         } else {
             document.body.appendChild(mainContainer);
-        }
-    }
-
-    // Draw from a specific action state instead of live data
-    public drawFromGameState(actionId: string | null) {
-        if (actionId === null) {
-            // Reset to live data
-            this.selectedAction = null;
-            return;
-        }
-        
-        if (this.actionStates.has(actionId)) {
-            this.selectedAction = actionId;
-        } else {
-            console.error(`Action with ID ${actionId} not found`);
         }
     }
 }

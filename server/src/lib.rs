@@ -37,7 +37,9 @@ pub struct GameState {
 
 #[spacetimedb::table(name = action, public)]
 pub struct Action {
+    #[auto_inc]
     #[primary_key]
+    id: u64,
     timestamp: Timestamp,
     action_type: String,
     description: String,
@@ -386,6 +388,7 @@ pub fn roll_dice(ctx: &ReducerContext) {
     
     // Add to actions table with game state
     ctx.db.action().insert(Action {
+        id: 0,
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
         description: description,
@@ -402,9 +405,10 @@ pub fn roll_dice(ctx: &ReducerContext) {
 pub fn chat_message(ctx: &ReducerContext, message: String) {
     // Create a new action with the chat message
     ctx.db.action().insert(Action {
+        id: 0,
+        timestamp: ctx.timestamp,
         action_type: "CHAT_MESSAGE".to_string(),
         description: message,
-        timestamp: ctx.timestamp,
         game_state: None,
     });
 }

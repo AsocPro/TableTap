@@ -35,6 +35,7 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 export type Action = {
+  id: bigint,
   timestamp: Timestamp,
   actionType: string,
   description: string,
@@ -51,6 +52,7 @@ export namespace Action {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("id", AlgebraicType.createU64Type()),
       new ProductTypeElement("timestamp", AlgebraicType.createTimestampType()),
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
