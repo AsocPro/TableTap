@@ -118,6 +118,25 @@ pub fn init(_ctx: &ReducerContext) {
         traversable: true,
     });
 
+    // Add non-traversable terrain (obstacles)
+    _ctx.db.terrain().insert(Terrain { 
+        id: 3, 
+        shape_type: ShapeType::Rectangle,
+        size: vec![120, 60],
+        color: "#8b4513".to_string(),  // Brown color for obstacles
+        position: vec![Position { x: 400, y: 150 }, Position { x: 520, y: 210 }],
+        traversable: false,
+    });
+    
+    _ctx.db.terrain().insert(Terrain { 
+        id: 4, 
+        shape_type: ShapeType::Circle,
+        size: vec![50],  // Radius of 50
+        color: "#8b4513".to_string(),  // Brown color for obstacles
+        position: vec![Position { x: 100, y: 300 }],
+        traversable: true,
+    });
+
     // Add example underlays
     _ctx.db.underlay().insert(Underlay {
         id: 1,
