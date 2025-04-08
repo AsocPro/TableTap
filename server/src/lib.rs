@@ -8,39 +8,29 @@ use spacetimedb::SpacetimeType;
 pub struct Unit {
     #[primary_key]
     id: u64,
-    x: i32,
-    y: i32,
-    size: i32,
-    color: String
+    shape_type: ShapeType,
+    size: Vec<u32>,
+    color: String,
+    position: Vec<Position>,
 }
 
-#[derive(Clone, Debug)]
-#[spacetimedb::table(name = obstacle, public)]
-pub struct Obstacle {
-    #[primary_key]
-    id: u64,
-    x: i32,
-    y: i32,
-    length: i32,
-    height: i32
-}
 
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = terrain, public)]
 pub struct Terrain {
-    #[primary_key]
+     #[primary_key]
     id: u64,
-    x: i32,
-    y: i32,
-    length: i32,
-    height: i32
+    shape_type: ShapeType,
+    size: Vec<u32>,
+    color: String,
+    position: Vec<Position>,
+    traversable: bool,
 }
 
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct GameState {
     pub terrains: Vec<Terrain>,
     pub units: Vec<Unit>,
-    pub obstacles: Vec<Obstacle>,
     pub underlays: Vec<Underlay>,
     pub overlays: Vec<Overlay>
 }
@@ -52,8 +42,6 @@ pub struct Action {
     action_type: String,
     description: String,
     game_state: Option<GameState>,
-    created_at: Option<Timestamp>,
-    updated_at: Option<Timestamp>
 }
 
 #[derive(Clone, Debug)]
@@ -62,11 +50,9 @@ pub struct Underlay {
     #[primary_key]
     id: u64,
     shape_type: ShapeType,
-    size: u32,
+    size: Vec<u32>,
     color: String,
-    position: Vec<Vec2>,
-    created_at: Option<Timestamp>,
-    updated_at: Option<Timestamp>
+    position: Vec<Position>,
 }
 
 #[derive(Clone, Debug)]
@@ -75,15 +61,13 @@ pub struct Overlay {
     #[primary_key]
     id: u64,
     shape_type: ShapeType,
-    size: u32,
+    size: Vec<u32>,
     color: String,
-    position: Vec<Vec2>,
-    created_at: Option<Timestamp>,
-    updated_at: Option<Timestamp>
+    position: Vec<Position>,
 }
 
 #[derive(SpacetimeType, Clone, Debug)]
-pub struct Vec2 {
+pub struct Position {
     x: u32,
     y: u32,
 }
@@ -99,78 +83,86 @@ pub enum ShapeType {
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
     // Called when the module is initially published
-    _ctx.db.unit().insert(Unit { id: 1, x: 50, y: 50, size: 28, color: "blue".to_string() });
-    _ctx.db.unit().insert(Unit { id: 2, x: 150, y: 50, size: 28, color: "red".to_string() });
+    _ctx.db.unit().insert(Unit { 
+        id: 1, 
+        shape_type: ShapeType::Circle,
+        size: vec![28], 
+        color: "blue".to_string(),
+        position: vec![Position { x: 50, y: 50 }],
+    });
     
-    // Add some initial obstacles
-    _ctx.db.obstacle().insert(Obstacle { id: 1, x: 100, y: 150, length: 200, height: 50 });
-    _ctx.db.obstacle().insert(Obstacle { id: 2, x: 350, y: 200, length: 100, height: 100 });
+    _ctx.db.unit().insert(Unit { 
+        id: 2, 
+        shape_type: ShapeType::Circle,
+        size: vec![28], 
+        color: "red".to_string(),
+        position: vec![Position { x: 150, y: 50 }],
+    });
     
     // Add some initial terrain (traversable)
-    _ctx.db.terrain().insert(Terrain { id: 1, x: 200, y: 250, length: 150, height: 100 });
-    _ctx.db.terrain().insert(Terrain { id: 2, x: 50, y: 100, length: 80, height: 80 });
+    _ctx.db.terrain().insert(Terrain { 
+        id: 1, 
+        shape_type: ShapeType::Rectangle,
+        size: vec![150, 100],
+        color: "#8fbc8f".to_string(),
+        position: vec![Position { x: 200, y: 250 }, Position { x: 350, y: 350 }],
+        traversable: true,
+    });
+    
+    _ctx.db.terrain().insert(Terrain { 
+        id: 2, 
+        shape_type: ShapeType::Rectangle,
+        size: vec![80, 80],
+        color: "#8fbc8f".to_string(),
+        position: vec![Position { x: 50, y: 100 }, Position { x: 130, y: 180 }],
+        traversable: true,
+    });
 
     // Add example underlays
     _ctx.db.underlay().insert(Underlay {
         id: 1,
         shape_type: ShapeType::Circle,
-        size: 100,
+        size: vec![100],
         color: "rgba(0, 255, 0, 0.2)".to_string(),
-        position: vec![Vec2 { x: 300, y: 300 }],
-        created_at: Some(_ctx.timestamp),
-        updated_at: Some(_ctx.timestamp)
+        position: vec![Position { x: 300, y: 300 }],
     });
 
     _ctx.db.underlay().insert(Underlay {
         id: 2,
         shape_type: ShapeType::Rectangle,
-        size: 0,
+        size: vec![100, 100],
         color: "rgba(255, 165, 0, 0.2)".to_string(),
-        position: vec![
-            Vec2 { x: 100, y: 100 },
-            Vec2 { x: 200, y: 200 }
-        ],
-        created_at: Some(_ctx.timestamp),
-        updated_at: Some(_ctx.timestamp)
+        position: vec![Position { x: 100, y: 100 }, Position { x: 200, y: 200 }],
     });
 
     // Add example overlays
     _ctx.db.overlay().insert(Overlay {
         id: 1,
         shape_type: ShapeType::Line,
-        size: 3,
+        size: vec![3],
         color: "rgba(255, 0, 0, 0.8)".to_string(),
-        position: vec![
-            Vec2 { x: 50, y: 50 },
-            Vec2 { x: 550, y: 350 }
-        ],
-        created_at: Some(_ctx.timestamp),
-        updated_at: Some(_ctx.timestamp)
+        position: vec![Position { x: 50, y: 50 }, Position { x: 550, y: 350 }],
     });
 
     _ctx.db.overlay().insert(Overlay {
         id: 2,
         shape_type: ShapeType::Polygon,
-        size: 0,
+        size: vec![0],
         color: "rgba(0, 0, 255, 0.3)".to_string(),
         position: vec![
-            Vec2 { x: 400, y: 100 },
-            Vec2 { x: 500, y: 100 },
-            Vec2 { x: 500, y: 200 },
-            Vec2 { x: 400, y: 200 }
+            Position { x: 400, y: 100 },
+            Position { x: 500, y: 100 },
+            Position { x: 500, y: 200 },
+            Position { x: 400, y: 200 }
         ],
-        created_at: Some(_ctx.timestamp),
-        updated_at: Some(_ctx.timestamp)
     });
 
     _ctx.db.overlay().insert(Overlay {
         id: 3,
         shape_type: ShapeType::Text,
-        size: 24,
+        size: vec![24],
         color: "rgba(0, 0, 0, 1.0)".to_string(),
-        position: vec![Vec2 { x: 250, y: 50 }],
-        created_at: Some(_ctx.timestamp),
-        updated_at: Some(_ctx.timestamp)
+        position: vec![Position { x: 250, y: 50 }],
     });
 }
 
@@ -198,20 +190,25 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 //}
 
 #[spacetimedb::reducer]
-pub fn add_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32, size: i32, color: String) {
+pub fn add_unit(ctx: &ReducerContext, unit_id: u64, size: Vec<u32>, color: String, position: Vec<Position>) {
     let mut new_id = unit_id;
     while let Some(_unit) = ctx.db.unit().id().find(unit_id) {
-        new_id = new_id +1;
-
+        new_id = new_id + 1;
     }
-    ctx.db.unit().insert(Unit { id: new_id, x: new_x, y: new_y, size: size, color: color });
+    ctx.db.unit().insert(Unit { 
+        id: new_id, 
+        shape_type: ShapeType::Circle, 
+        size, 
+        color, 
+        position,
+    });
 }
 
 #[spacetimedb::reducer]
-pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
+pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: u32, new_y: u32) {
     if let Some(unit) = ctx.db.unit().id().find(unit_id) {
         // Check for collisions with canvas boundaries
-        let unit_radius = unit.size / 2;
+        let unit_radius = unit.size[0] / 2;
         let canvas_width = 600; // Match your canvas width
         let canvas_height = 400; // Match your canvas height
         
@@ -231,8 +228,8 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
             }
 
             // Calculate distance between centers of circles
-            let unit_center_x = other_unit.x;
-            let unit_center_y = other_unit.y;
+            let unit_center_x = other_unit.position[0].x;
+            let unit_center_y = other_unit.position[0].y;
             let new_center_x = new_x;
             let new_center_y = new_y;
             
@@ -241,23 +238,26 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
             let distance_squared = dx * dx + dy * dy;
             
             // If distance is less than combined radii, there's a collision
-            let min_distance = (unit.size + other_unit.size) / 2;
+            let min_distance = (unit.size[0] + other_unit.size[0]) / 2;
             if distance_squared < min_distance * min_distance {
                 will_collide = true;
                 break;
             }
         }
         
-        // Check collision with obstacles if no unit collision found
+        // Check collision with terrain if no unit collision found
         if !will_collide {
             let unit_center_x = new_x;
             let unit_center_y = new_y;
             
-            for obstacle in ctx.db.obstacle().iter() {
+            for terrain in ctx.db.terrain().iter() {
                 // Check if circle intersects with rectangle
                 // Find closest point on rectangle to circle center
-                let closest_x = unit_center_x.max(obstacle.x).min(obstacle.x + obstacle.length);
-                let closest_y = unit_center_y.max(obstacle.y).min(obstacle.y + obstacle.height);
+                if terrain.traversable {
+                    continue;
+                }
+                let closest_x = unit_center_x.max(terrain.position[0].x).min(terrain.position[0].x + terrain.size[0]);
+                let closest_y = unit_center_y.max(terrain.position[0].y).min(terrain.position[0].y + terrain.size[1]);
                 
                 // Calculate distance from closest point to circle center
                 let dx = unit_center_x - closest_x;
@@ -273,29 +273,34 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: i32, new_y: i32) {
 
         // Only move if there's no collision
         if !will_collide {
-            ctx.db.unit().id().update(Unit { x: new_x, y: new_y, ..unit });
+            ctx.db.unit().id().update(Unit { 
+                id: unit_id, 
+                shape_type: unit.shape_type, 
+                size: unit.size, 
+                color: unit.color, 
+                position: vec![Position { x: new_x, y: new_y }], 
+            });
         }
     } else { 
         log::error!("Failed to update unit: ID {} not found", unit_id)
     }
 }
 
-#[spacetimedb::reducer]
-pub fn add_obstacle(ctx: &ReducerContext, obstacle_id: u64, new_x: i32, new_y: i32, length: i32, height: i32) {
-    let mut new_id = obstacle_id;
-    while let Some(_obstacle) = ctx.db.obstacle().id().find(obstacle_id) {
-        new_id = new_id + 1;
-    }
-    ctx.db.obstacle().insert(Obstacle { id: new_id, x: new_x, y: new_y, length, height });
-}
 
 #[spacetimedb::reducer]
-pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, new_x: i32, new_y: i32, length: i32, height: i32) {
+pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool) {
     let mut new_id = terrain_id;
     while let Some(_terrain) = ctx.db.terrain().id().find(terrain_id) {
         new_id = new_id + 1;
     }
-    ctx.db.terrain().insert(Terrain { id: new_id, x: new_x, y: new_y, length, height });
+    ctx.db.terrain().insert(Terrain { 
+        id: new_id, 
+        shape_type: ShapeType::Rectangle, 
+        size, 
+        color, 
+        position,
+        traversable,
+    });
 }
 
 #[spacetimedb::reducer]
@@ -304,15 +309,6 @@ pub fn delete_unit(ctx: &ReducerContext, unit_id: u64) {
         ctx.db.unit().id().delete(unit_id);
     } else {
         log::error!("Failed to delete unit: ID {} not found", unit_id);
-    }
-}
-
-#[spacetimedb::reducer]
-pub fn delete_obstacle(ctx: &ReducerContext, obstacle_id: u64) {
-    if let Some(_obstacle) = ctx.db.obstacle().id().find(obstacle_id) {
-        ctx.db.obstacle().id().delete(obstacle_id);
-    } else {
-        log::error!("Failed to delete obstacle: ID {} not found", obstacle_id);
     }
 }
 
@@ -326,32 +322,22 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 }
 
 #[spacetimedb::reducer]
-pub fn delete_at_coordinates(ctx: &ReducerContext, x: i32, y: i32) {
+pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
     // Check units
     for unit in ctx.db.unit().iter() {
-        let center_x = unit.x + unit.size/2;
-        let center_y = unit.y + unit.size/2;
+        let center_x = unit.position[0].x + unit.size[0]/2;
+        let center_y = unit.position[0].y + unit.size[0]/2;
         let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
         
-        if distance <= (unit.size/2).pow(2) as f64 {
+        if distance <= (unit.size[0]/2).pow(2) as f64 {
             ctx.db.unit().id().delete(unit.id);
             return;
         }
     }
-    
-    // Check obstacles
-    for obstacle in ctx.db.obstacle().iter() {
-        if x >= obstacle.x && x <= obstacle.x + obstacle.length &&
-           y >= obstacle.y && y <= obstacle.y + obstacle.height {
-            ctx.db.obstacle().id().delete(obstacle.id);
-            return;
-        }
-    }
-    
     // Check terrain
     for terrain in ctx.db.terrain().iter() {
-        if x >= terrain.x && x <= terrain.x + terrain.length &&
-           y >= terrain.y && y <= terrain.y + terrain.height {
+        if x >= terrain.position[0].x && x <= terrain.position[0].x + terrain.size[0] &&
+           y >= terrain.position[0].y && y <= terrain.position[0].y + terrain.size[1] {
             ctx.db.terrain().id().delete(terrain.id);
             return;
         }
@@ -364,12 +350,6 @@ pub fn delete_all(ctx: &ReducerContext) {
     for unit in ctx.db.unit().iter() {
         ctx.db.unit().id().delete(unit.id);
     }
-    
-    // Delete all obstacles
-    for obstacle in ctx.db.obstacle().iter() {
-        ctx.db.obstacle().id().delete(obstacle.id);
-    }
-    
     // Delete all terrain
     for terrain in ctx.db.terrain().iter() {
         ctx.db.terrain().id().delete(terrain.id);
@@ -393,12 +373,9 @@ pub fn roll_dice(ctx: &ReducerContext) {
         game_state: Some(GameState {
             terrains: ctx.db.terrain().iter().collect(),
             units: ctx.db.unit().iter().collect(),
-            obstacles: ctx.db.obstacle().iter().collect(),
             underlays: ctx.db.underlay().iter().collect(),
             overlays: ctx.db.overlay().iter().collect()
         }),
-        created_at: Some(ctx.timestamp),
-        updated_at: Some(ctx.timestamp)
     });
 }
 
@@ -410,13 +387,11 @@ pub fn chat_message(ctx: &ReducerContext, message: String) {
         description: message,
         timestamp: ctx.timestamp,
         game_state: None,
-        created_at: Some(ctx.timestamp),
-        updated_at: Some(ctx.timestamp),
     });
 }
 
 #[spacetimedb::reducer]
-pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeType, size: u32, color: String, position: Vec<Vec2>) {
+pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     let mut new_id = underlay_id;
     while let Some(_underlay) = ctx.db.underlay().id().find(underlay_id) {
         new_id = new_id + 1;
@@ -427,13 +402,11 @@ pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeTyp
         size, 
         color, 
         position,
-        created_at: Some(ctx.timestamp),
-        updated_at: Some(ctx.timestamp)
     });
 }
 
 #[spacetimedb::reducer]
-pub fn add_overlay(ctx: &ReducerContext, overlay_id: u64, shape_type: ShapeType, size: u32, color: String, position: Vec<Vec2>) {
+pub fn add_overlay(ctx: &ReducerContext, overlay_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     let mut new_id = overlay_id;
     while let Some(_overlay) = ctx.db.overlay().id().find(overlay_id) {
         new_id = new_id + 1;
@@ -444,8 +417,6 @@ pub fn add_overlay(ctx: &ReducerContext, overlay_id: u64, shape_type: ShapeType,
         size, 
         color, 
         position,
-        created_at: Some(ctx.timestamp),
-        updated_at: Some(ctx.timestamp)
     });
 }
 
@@ -468,16 +439,16 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
 }
 
 #[spacetimedb::reducer]
-pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i32, offset_x: i32, offset_y: i32) {
+pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32) {
     match event_type.as_str() {
         "mousedown" => {
             // Find unit under cursor
             for unit in ctx.db.unit().iter() {
-                let center_x = unit.x;
-                let center_y = unit.y;
+                let center_x = unit.position[0].x;
+                let center_y = unit.position[0].y;
                 let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
                 
-                if distance <= (unit.size/2).pow(2) as f64 {
+                if distance <= (unit.size[0]/2).pow(2) as f64 {
                     // Store selected unit in a new table
                     ctx.db.selected_unit().insert(SelectedUnit { 
                         id: unit.id,
@@ -494,11 +465,11 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i
             if let Some(selected) = ctx.db.selected_unit().iter().next() {
                 if let Some(unit) = ctx.db.unit().id().find(selected.id) {
                     // Calculate new position based on offset
-                    let new_x = unit.x + offset_x;
-                    let new_y = unit.y + offset_y;
+                    let new_x = unit.position[0].x + offset_x;
+                    let new_y = unit.position[0].y + offset_y;
                     
                     // Check for collisions with canvas boundaries
-                    let unit_radius = unit.size / 2;
+                    let unit_radius = unit.size[0] / 2;
                     let canvas_width = 600;
                     let canvas_height = 400;
                     
@@ -512,25 +483,28 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i
                                 continue;
                             }
 
-                            let dx = new_x - other_unit.x;
-                            let dy = new_y - other_unit.y;
+                            let dx = new_x - other_unit.position[0].x;
+                            let dy = new_y - other_unit.position[0].y;
                             let distance_squared = dx * dx + dy * dy;
                             
-                            let min_distance = (unit.size + other_unit.size) / 2;
+                            let min_distance = (unit.size[0] + other_unit.size[0]) / 2;
                             if distance_squared < min_distance * min_distance {
                                 will_collide = true;
                                 break;
                             }
                         }
                         
-                        // Check collision with obstacles if no unit collision found
+                        // Check collision with terrain if no unit collision found
                         if !will_collide {
                             let unit_center_x = new_x;
                             let unit_center_y = new_y;
                             
-                            for obstacle in ctx.db.obstacle().iter() {
-                                let closest_x = unit_center_x.max(obstacle.x).min(obstacle.x + obstacle.length);
-                                let closest_y = unit_center_y.max(obstacle.y).min(obstacle.y + obstacle.height);
+                            for terrain in ctx.db.terrain().iter() {
+                                if terrain.traversable {
+                                    continue;
+                                }
+                                let closest_x = unit_center_x.max(terrain.position[0].x).min(terrain.position[0].x + terrain.size[0]);
+                                let closest_y = unit_center_y.max(terrain.position[0].y).min(terrain.position[0].y + terrain.size[1]);
                                 
                                 let dx = unit_center_x - closest_x;
                                 let dy = unit_center_y - closest_y;
@@ -545,7 +519,13 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i
 
                         // Only move if there's no collision
                         if !will_collide {
-                            ctx.db.unit().id().update(Unit { x: new_x, y: new_y, ..unit });
+                            ctx.db.unit().id().update(Unit { 
+                                id: unit.id, 
+                                shape_type: unit.shape_type, 
+                                size: unit.size, 
+                                color: unit.color, 
+                                position: vec![Position { x: new_x, y: new_y }], 
+                            });
                         }
                     }
                 }
@@ -565,8 +545,8 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: i32, y: i
 pub struct SelectedUnit {
     #[primary_key]
     id: u64,
-    start_x: i32,
-    start_y: i32,
-    offset_x: i32,
-    offset_y: i32
+    start_x: u32,
+    start_y: u32,
+    offset_x: u32,
+    offset_y: u32
 }
