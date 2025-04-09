@@ -116,83 +116,61 @@ export class Game {
         this.createUI();
     }
 
+    private setupEntityCallbacks<T extends { id: bigint }>(
+        collection: { 
+            onInsert: (cb: (ctx: EventContext, row: T) => void) => void;
+            onUpdate: (cb: (ctx: EventContext, row: T) => void) => void;
+            onDelete: (cb: (ctx: EventContext, row: T) => void) => void;
+        },
+        entities: T[],
+        layerName: 'terrain' | 'units' | 'underlay' | 'overlay'
+    ) {
+        const upsertCallback = (_ctx: EventContext, row: T) => {
+            const index = entities.findIndex(e => e.id === row.id);
+            if (index >= 0) {
+                entities[index] = row;
+            } else {
+                entities.push(row);
+            }
+            this.markLayerDirty(layerName);
+        };
+
+        const deleteCallback = (_ctx: EventContext, row: T) => {
+            entities = entities.filter(e => e.id !== row.id);
+            this.markLayerDirty(layerName);
+        };
+
+        collection.onInsert(upsertCallback);
+        collection.onUpdate(upsertCallback);
+        collection.onDelete(deleteCallback);
+    }
+
     private setupDatabaseCallbacks() {
-        // Handle unit data
-        const unitCallback = (_ctx: EventContext, unit: Unit) => {
-            const index = this.currentGameState.units.findIndex(u => u.id === unit.id);
-            if (index >= 0) {
-                this.currentGameState.units[index] = unit;
-            } else {
-                this.currentGameState.units.push(unit);
-            }
-            this.markLayerDirty('units');
-        }
-        this.dbConnection.db.unit.onInsert(unitCallback);
-        this.dbConnection.db.unit.onUpdate(unitCallback);
+        // Handle all entity types
+        this.setupEntityCallbacks<Unit>(
+            this.dbConnection.db.unit,
+            this.currentGameState.units,
+            'units'
+        );
         
-        const unitDeleteCallback = (_ctx: EventContext, unit: Unit) => {
-            this.currentGameState.units = this.currentGameState.units.filter(u => u.id !== unit.id);
-            this.markLayerDirty('units');
-        }
-        this.dbConnection.db.unit.onDelete(unitDeleteCallback);
+        this.setupEntityCallbacks<Terrain>(
+            this.dbConnection.db.terrain,
+            this.currentGameState.terrains,
+            'terrain'
+        );
         
-        // Handle terrain data
-        const terrainCallback = (_ctx: EventContext, terrain: Terrain) => {
-            const index = this.currentGameState.terrains.findIndex(t => t.id === terrain.id);
-            if (index >= 0) {
-                this.currentGameState.terrains[index] = terrain;
-            } else {
-                this.currentGameState.terrains.push(terrain);
-            }
-            this.markLayerDirty('terrain');
-        }
-        this.dbConnection.db.terrain.onInsert(terrainCallback);
-        this.dbConnection.db.terrain.onUpdate(terrainCallback);
+        this.setupEntityCallbacks<Underlay>(
+            this.dbConnection.db.underlay,
+            this.currentGameState.underlays,
+            'underlay'
+        );
         
-        const terrainDeleteCallback = (_ctx: EventContext, terrain: Terrain) => {
-            this.currentGameState.terrains = this.currentGameState.terrains.filter(t => t.id !== terrain.id);
-            this.markLayerDirty('terrain');
-        }
-        this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
-        
-        // Handle underlay data
-        const underlayCallback = (_ctx: EventContext, underlay: Underlay) => {
-            const index = this.currentGameState.underlays.findIndex(u => u.id === underlay.id);
-            if (index >= 0) {
-                this.currentGameState.underlays[index] = underlay;
-            } else {
-                this.currentGameState.underlays.push(underlay);
-            }
-            this.markLayerDirty('underlay');
-        }
-        this.dbConnection.db.underlay.onInsert(underlayCallback);
-        this.dbConnection.db.underlay.onUpdate(underlayCallback);
-        
-        const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
-            this.currentGameState.underlays = this.currentGameState.underlays.filter(u => u.id !== underlay.id);
-            this.markLayerDirty('underlay');
-        }
-        this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
-        
-        // Handle overlay data
-        const overlayCallback = (_ctx: EventContext, overlay: Overlay) => {
-            const index = this.currentGameState.overlays.findIndex(o => o.id === overlay.id);
-            if (index >= 0) {
-                this.currentGameState.overlays[index] = overlay;
-            } else {
-                this.currentGameState.overlays.push(overlay);
-            }
-            this.markLayerDirty('overlay');
-        }
-        this.dbConnection.db.overlay.onInsert(overlayCallback);
-        this.dbConnection.db.overlay.onUpdate(overlayCallback);
-        
-        const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
-            this.currentGameState.overlays = this.currentGameState.overlays.filter(o => o.id !== overlay.id);
-            this.markLayerDirty('overlay');
-        }
-        this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);
-        
+        this.setupEntityCallbacks<Overlay>(
+            this.dbConnection.db.overlay,
+            this.currentGameState.overlays,
+            'overlay'
+        );
+
         // Handle action data to extract game states
         const actionCallback = (_ctx: EventContext, action: any) => {
             if (action.gameState) {
@@ -384,4 +362,3 @@ export class Game {
         }
     }
 }
-
