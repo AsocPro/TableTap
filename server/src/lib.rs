@@ -73,13 +73,74 @@ pub struct Position {
     x: u32,
     y: u32,
 }
-#[derive(SpacetimeType, Clone, Debug)]
+#[derive(SpacetimeType, Copy, Clone, Debug)]
 pub enum ShapeType {
     Circle,
     Rectangle,
     Line,
     Polygon,
     Text,
+}
+
+fn check_shape_collision(
+    shape1_type: &ShapeType,
+    shape1_pos: &[Position],
+    shape1_size: &[u32],
+    shape2_type: &ShapeType,
+    shape2_pos: &[Position],
+    shape2_size: &[u32]
+) -> bool {
+    match (shape1_type, shape2_type) {
+        // Circle to Circle
+        (ShapeType::Circle, ShapeType::Circle) => {
+            let dx = shape1_pos[0].x as i32 - shape2_pos[0].x as i32;
+            let dy = shape1_pos[0].y as i32 - shape2_pos[0].y as i32;
+            let distance_squared = dx * dx + dy * dy;
+            let min_distance = (shape1_size[0] + shape2_size[0]) / 2;
+            distance_squared < (min_distance * min_distance) as i32
+        },
+        // Rectangle to Rectangle
+        (ShapeType::Rectangle, ShapeType::Rectangle) => {
+            // Check if rectangles overlap using AABB collision
+            let r1_left = shape1_pos[0].x;
+            let r1_right = shape1_pos[0].x + shape1_size[0];
+            let r1_top = shape1_pos[0].y;
+            let r1_bottom = shape1_pos[0].y + shape1_size[1];
+            
+            let r2_left = shape2_pos[0].x;
+            let r2_right = shape2_pos[0].x + shape2_size[0];
+            let r2_top = shape2_pos[0].y;
+            let r2_bottom = shape2_pos[0].y + shape2_size[1];
+
+            r1_left < r2_right && r1_right > r2_left &&
+            r1_top < r2_bottom && r1_bottom > r2_top
+        },
+        // Circle to Rectangle
+        (ShapeType::Circle, ShapeType::Rectangle) | (ShapeType::Rectangle, ShapeType::Circle) => {
+            let (circle_pos, circle_size, rect_pos, rect_size) = if matches!(shape1_type, ShapeType::Circle) {
+                (shape1_pos, shape1_size, shape2_pos, shape2_size)
+            } else {
+                (shape2_pos, shape2_size, shape1_pos, shape1_size)
+            };
+
+            let circle_radius = circle_size[0] / 2;
+            let circle_x = circle_pos[0].x;
+            let circle_y = circle_pos[0].y;
+
+            // Find closest point on rectangle to circle center
+            let closest_x = circle_x.max(rect_pos[0].x).min(rect_pos[0].x + rect_size[0]);
+            let closest_y = circle_y.max(rect_pos[0].y).min(rect_pos[0].y + rect_size[1]);
+
+            // Calculate distance from closest point to circle center
+            let dx = circle_x as i32 - closest_x as i32;
+            let dy = circle_y as i32 - closest_y as i32;
+            let distance_squared = dx * dx + dy * dy;
+
+            distance_squared < (circle_radius * circle_radius) as i32
+        },
+        // All other shape combinations don't trigger collision
+        _ => false
+    }
 }
 
 #[spacetimedb::reducer(init)]
@@ -99,6 +160,13 @@ pub fn init(_ctx: &ReducerContext) {
         size: vec![28], 
         color: "red".to_string(),
         position: vec![Position { x: 150, y: 50 }],
+    });
+    _ctx.db.unit().insert(Unit { 
+        id: 3, 
+        shape_type: ShapeType::Rectangle,
+        size: vec![30, 30],
+        color: "yellow".to_string(),
+        position: vec![Position { x: 100, y: 100 }, Position{ x: 130, y: 130}],
     });
     
     // Add some initial terrain (traversable)
@@ -136,7 +204,7 @@ pub fn init(_ctx: &ReducerContext) {
         size: vec![50],  // Radius of 50
         color: "#8b4513".to_string(),  // Brown color for obstacles
         position: vec![Position { x: 100, y: 300 }],
-        traversable: true,
+        traversable: false,
     });
 
     // Add example underlays
@@ -197,19 +265,6 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
     // Called everytime a client disconnects
 }
 
-//#[spacetimedb::reducer]
-//pub fn add(ctx: &ReducerContext, name: String) {
-//    ctx.db.person().insert(Person { name });
-//}
-//
-//#[spacetimedb::reducer]
-//pub fn say_hello(ctx: &ReducerContext) {
-//    for person in ctx.db.person().iter() {
-//        log::info!("Hello, {}!", person.name);
-//    }
-//    log::info!("Hello, World!");
-//}
-
 #[spacetimedb::reducer]
 pub fn add_unit(ctx: &ReducerContext, unit_id: u64, size: Vec<u32>, color: String, position: Vec<Position>) {
     let mut new_id = unit_id;
@@ -241,6 +296,7 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: u32, new_y: u32) {
 
         // Check for collisions with other units
         let mut will_collide = false;
+        let new_pos = vec![Position { x: new_x, y: new_y }];
         
         // Check collision with other units
         for other_unit in ctx.db.unit().iter() {
@@ -248,19 +304,14 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: u32, new_y: u32) {
                 continue;
             }
 
-            // Calculate distance between centers of circles
-            let unit_center_x = other_unit.position[0].x;
-            let unit_center_y = other_unit.position[0].y;
-            let new_center_x = new_x;
-            let new_center_y = new_y;
-            
-            let dx = new_center_x - unit_center_x;
-            let dy = new_center_y - unit_center_y;
-            let distance_squared = dx * dx + dy * dy;
-            
-            // If distance is less than combined radii, there's a collision
-            let min_distance = (unit.size[0] + other_unit.size[0]) / 2;
-            if distance_squared < min_distance * min_distance {
+            if check_shape_collision(
+                &unit.shape_type,
+                &new_pos,
+                &unit.size,
+                &other_unit.shape_type,
+                &other_unit.position,
+                &other_unit.size
+            ) {
                 will_collide = true;
                 break;
             }
@@ -268,24 +319,19 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: u32, new_y: u32) {
         
         // Check collision with terrain if no unit collision found
         if !will_collide {
-            let unit_center_x = new_x;
-            let unit_center_y = new_y;
-            
             for terrain in ctx.db.terrain().iter() {
-                // Check if circle intersects with rectangle
-                // Find closest point on rectangle to circle center
                 if terrain.traversable {
                     continue;
                 }
-                let closest_x = unit_center_x.max(terrain.position[0].x).min(terrain.position[0].x + terrain.size[0]);
-                let closest_y = unit_center_y.max(terrain.position[0].y).min(terrain.position[0].y + terrain.size[1]);
-                
-                // Calculate distance from closest point to circle center
-                let dx = unit_center_x - closest_x;
-                let dy = unit_center_y - closest_y;
-                let distance_squared = dx * dx + dy * dy;
-                
-                if distance_squared < unit_radius * unit_radius {
+
+                if check_shape_collision(
+                    &unit.shape_type,
+                    &new_pos,
+                    &unit.size,
+                    &terrain.shape_type,
+                    &terrain.position,
+                    &terrain.size
+                ) {
                     will_collide = true;
                     break;
                 }
@@ -299,14 +345,13 @@ pub fn move_unit(ctx: &ReducerContext, unit_id: u64, new_x: u32, new_y: u32) {
                 shape_type: unit.shape_type, 
                 size: unit.size, 
                 color: unit.color, 
-                position: vec![Position { x: new_x, y: new_y }], 
+                position: new_pos, 
             });
         }
     } else { 
         log::error!("Failed to update unit: ID {} not found", unit_id)
     }
 }
-
 
 #[spacetimedb::reducer]
 pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool) {
@@ -467,20 +512,43 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
         "mousedown" => {
             // Find unit under cursor
             for unit in ctx.db.unit().iter() {
-                let center_x = unit.position[0].x;
-                let center_y = unit.position[0].y;
-                let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
-                
-                if distance <= (unit.size[0]/2).pow(2) as f64 {
-                    // Store selected unit in a new table
-                    ctx.db.selected_unit().insert(SelectedUnit { 
-                        id: unit.id,
-                        start_x: x,
-                        start_y: y,
-                        offset_x: 0,
-                        offset_y: 0
-                    });
-                    break;
+                match unit.shape_type {
+                    ShapeType::Circle => {
+                        let center_x = unit.position[0].x;
+                        let center_y = unit.position[0].y;
+                        let distance = ((x as i32 - center_x as i32).pow(2) + 
+                                     (y as i32 - center_y as i32).pow(2)) as f64;
+                        
+                        if distance <= (unit.size[0]/2).pow(2) as f64 {
+                            // Store selected unit in a new table
+                            ctx.db.selected_unit().insert(SelectedUnit { 
+                                id: unit.id,
+                                start_x: x,
+                                start_y: y,
+                                offset_x: 0,
+                                offset_y: 0
+                            });
+                            break;
+                        }
+                    },
+                    ShapeType::Rectangle => {
+                        let left = unit.position[0].x;
+                        let right = unit.position[0].x + unit.size[0];
+                        let top = unit.position[0].y;
+                        let bottom = unit.position[0].y + unit.size[1];
+                        
+                        if x >= left && x <= right && y >= top && y <= bottom {
+                            ctx.db.selected_unit().insert(SelectedUnit { 
+                                id: unit.id,
+                                start_x: x,
+                                start_y: y,
+                                offset_x: 0,
+                                offset_y: 0
+                            });
+                            break;
+                        }
+                    },
+                    _ => continue // Skip other shapes
                 }
             }
         }
@@ -492,64 +560,95 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     let new_y = unit.position[0].y + offset_y;
                     
                     // Check for collisions with canvas boundaries
-                    let unit_radius = unit.size[0] / 2;
                     let canvas_width = 600;
                     let canvas_height = 400;
                     
-                    if new_x >= unit_radius && new_x <= canvas_width - unit_radius &&
-                       new_y >= unit_radius && new_y <= canvas_height - unit_radius {
-                        // Check for collisions with other units
-                        let mut will_collide = false;
-                        
-                        for other_unit in ctx.db.unit().iter() {
-                            if other_unit.id == unit.id {
-                                continue;
+                    let mut within_bounds = true;
+                    match unit.shape_type {
+                        ShapeType::Circle => {
+                            let radius = unit.size[0] / 2;
+                            if new_x < radius || new_x > canvas_width - radius ||
+                               new_y < radius || new_y > canvas_height - radius {
+                                within_bounds = false;
                             }
+                        },
+                        ShapeType::Rectangle => {
+                            if new_x > canvas_width - unit.size[0] || new_y > canvas_height - unit.size[1] ||
+                               new_x < 0 || new_y < 0 {
+                                within_bounds = false;
+                            }
+                        },
+                        _ => {} // Other shapes don't check bounds
+                    }
+                    
+                    if !within_bounds {
+                        return;
+                    }
 
-                            let dx = new_x - other_unit.position[0].x;
-                            let dy = new_y - other_unit.position[0].y;
-                            let distance_squared = dx * dx + dy * dy;
-                            
-                            let min_distance = (unit.size[0] + other_unit.size[0]) / 2;
-                            if distance_squared < min_distance * min_distance {
-                                will_collide = true;
-                                break;
-                            }
+                    let new_pos = vec![Position { x: new_x, y: new_y }];
+                    let mut will_collide = false;
+                    
+                    // Check collision with other units
+                    for other_unit in ctx.db.unit().iter() {
+                        if other_unit.id == unit.id {
+                            continue;
                         }
-                        
-                        // Check collision with terrain if no unit collision found
-                        if !will_collide {
-                            let unit_center_x = new_x;
-                            let unit_center_y = new_y;
-                            
-                            for terrain in ctx.db.terrain().iter() {
-                                if terrain.traversable {
-                                    continue;
-                                }
-                                let closest_x = unit_center_x.max(terrain.position[0].x).min(terrain.position[0].x + terrain.size[0]);
-                                let closest_y = unit_center_y.max(terrain.position[0].y).min(terrain.position[0].y + terrain.size[1]);
-                                
-                                let dx = unit_center_x - closest_x;
-                                let dy = unit_center_y - closest_y;
-                                let distance_squared = dx * dx + dy * dy;
-                                
-                                if distance_squared < unit_radius * unit_radius {
+
+                        // Only check collisions for circles and rectangles
+                        match (unit.shape_type, other_unit.shape_type) {
+                            (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
+                                if check_shape_collision(
+                                    &unit.shape_type,
+                                    &new_pos,
+                                    &unit.size,
+                                    &other_unit.shape_type,
+                                    &other_unit.position,
+                                    &other_unit.size
+                                ) {
                                     will_collide = true;
                                     break;
                                 }
+                            },
+                            _ => continue
+                        }
+                    }
+                    
+                    // Check collision with terrain if no unit collision found
+                    if !will_collide {
+                        for terrain in ctx.db.terrain().iter() {
+                            if terrain.traversable {
+                                continue;
+                            }
+
+                            // Only check collisions for circles and rectangles
+                            match (unit.shape_type, terrain.shape_type) {
+                                (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
+                                    if check_shape_collision(
+                                        &unit.shape_type,
+                                        &new_pos,
+                                        &unit.size,
+                                        &terrain.shape_type,
+                                        &terrain.position,
+                                        &terrain.size
+                                    ) {
+                                        will_collide = true;
+                                        break;
+                                    }
+                                },
+                                _ => continue
                             }
                         }
+                    }
 
-                        // Only move if there's no collision
-                        if !will_collide {
-                            ctx.db.unit().id().update(Unit { 
-                                id: unit.id, 
-                                shape_type: unit.shape_type, 
-                                size: unit.size, 
-                                color: unit.color, 
-                                position: vec![Position { x: new_x, y: new_y }], 
-                            });
-                        }
+                    // Only move if there's no collision
+                    if !will_collide {
+                        ctx.db.unit().id().update(Unit { 
+                            id: unit.id, 
+                            shape_type: unit.shape_type, 
+                            size: unit.size, 
+                            color: unit.color, 
+                            position: new_pos,
+                        });
                     }
                 }
             }
