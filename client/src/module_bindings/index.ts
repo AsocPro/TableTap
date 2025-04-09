@@ -63,8 +63,6 @@ import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
-import { MoveUnit } from "./move_unit_reducer.ts";
-export { MoveUnit };
 import { RollDice } from "./roll_dice_reducer.ts";
 export { RollDice };
 
@@ -192,10 +190,6 @@ const REMOTE_MODULE = {
       reducerName: "identity_disconnected",
       argsType: IdentityDisconnected.getTypeScriptAlgebraicType(),
     },
-    move_unit: {
-      reducerName: "move_unit",
-      argsType: MoveUnit.getTypeScriptAlgebraicType(),
-    },
     roll_dice: {
       reducerName: "roll_dice",
       argsType: RollDice.getTypeScriptAlgebraicType(),
@@ -241,7 +235,6 @@ export type Reducer = never
 | { name: "HandleMouseEvent", args: HandleMouseEvent }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
-| { name: "MoveUnit", args: MoveUnit }
 | { name: "RollDice", args: RollDice }
 ;
 
@@ -452,22 +445,6 @@ export class RemoteReducers {
     this.connection.offReducer("identity_disconnected", callback);
   }
 
-  moveUnit(unitId: bigint, newX: number, newY: number) {
-    const __args = { unitId, newX, newY };
-    let __writer = new BinaryWriter(1024);
-    MoveUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("move_unit", __argsBuffer, this.setCallReducerFlags.moveUnitFlags);
-  }
-
-  onMoveUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
-    this.connection.onReducer("move_unit", callback);
-  }
-
-  removeOnMoveUnit(callback: (ctx: ReducerEventContext, unitId: bigint, newX: number, newY: number) => void) {
-    this.connection.offReducer("move_unit", callback);
-  }
-
   rollDice() {
     this.connection.callReducer("roll_dice", new Uint8Array(0), this.setCallReducerFlags.rollDiceFlags);
   }
@@ -541,11 +518,6 @@ export class SetReducerFlags {
   handleMouseEventFlags: CallReducerFlags = 'FullUpdate';
   handleMouseEvent(flags: CallReducerFlags) {
     this.handleMouseEventFlags = flags;
-  }
-
-  moveUnitFlags: CallReducerFlags = 'FullUpdate';
-  moveUnit(flags: CallReducerFlags) {
-    this.moveUnitFlags = flags;
   }
 
   rollDiceFlags: CallReducerFlags = 'FullUpdate';
