@@ -166,7 +166,7 @@ pub fn init(_ctx: &ReducerContext) {
         shape_type: ShapeType::Rectangle,
         size: vec![30, 30],
         color: "yellow".to_string(),
-        position: vec![Position { x: 100, y: 100 }, Position{ x: 130, y: 130}],
+        position: vec![Position { x: 100, y: 100 }],
     });
     
     // Add some initial terrain (traversable)

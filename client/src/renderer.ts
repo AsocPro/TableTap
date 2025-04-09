@@ -76,13 +76,12 @@ export class Renderer {
     }
 
     private drawRectangle(ctx: CanvasRenderingContext2D, shape: Unit | Terrain | Underlay | Overlay) {
-        if (!shape.position?.[0] || !shape.position?.[1] || !shape.size?.[0] || !shape.size?.[1]) return;
-        const start = shape.position[0];
-        const end = shape.position[1];
-        const width = end.x - start.x;
-        const height = end.y - start.y;
-        ctx.fillRect(start.x, start.y, width, height);
-        ctx.strokeRect(start.x, start.y, width, height);
+        if (!shape.position?.[0] || !shape.size?.[0] || !shape.size?.[1]) return;
+        const pos = shape.position[0];
+        const width = shape.size[0];
+        const height = shape.size[1];
+        ctx.fillRect(pos.x, pos.y, width, height);
+        ctx.strokeRect(pos.x, pos.y, width, height);
     }
 
     private drawLine(ctx: CanvasRenderingContext2D, shape: Unit | Terrain | Underlay | Overlay) {
@@ -117,4 +116,3 @@ export class Renderer {
         ctx.fillText(shape.color, pos.x, pos.y);
     }
 }
-
