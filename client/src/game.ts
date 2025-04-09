@@ -21,11 +21,18 @@ export class Game {
         units: CanvasRenderingContext2D;
         overlay: CanvasRenderingContext2D;
     };
+    private dirtyLayers: {
+        terrain: boolean;
+        units: boolean;
+        underlay: boolean;
+        overlay: boolean;
+    }
     private currentGameState: GameState;
     private renderer: Renderer;
     private dbConnection: DbConnection;
     private selectedAction: number | null = null;
     private actionStates: Map<number, GameState> = new Map();
+    private renderScheduled: boolean;
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
@@ -86,6 +93,15 @@ export class Game {
             units: this.canvasLayers.units.getContext('2d')!,
             overlay: this.canvasLayers.overlay.getContext('2d')!
         };
+
+        this.dirtyLayers = {
+          terrain: false,
+          units: false,
+          underlay: false,
+          overlay: false,
+        };
+    
+        this.renderScheduled = false;
         
         // Initialize renderer with empty game state
         this.renderer = new Renderer(this.ctx);
@@ -109,14 +125,14 @@ export class Game {
             } else {
                 this.currentGameState.units.push(unit);
             }
-            this.renderUnits();
+            this.markLayerDirty('units');
         }
         this.dbConnection.db.unit.onInsert(unitCallback);
         this.dbConnection.db.unit.onUpdate(unitCallback);
         
         const unitDeleteCallback = (_ctx: EventContext, unit: Unit) => {
             this.currentGameState.units = this.currentGameState.units.filter(u => u.id !== unit.id);
-            this.renderUnits();
+            this.markLayerDirty('units');
         }
         this.dbConnection.db.unit.onDelete(unitDeleteCallback);
         
@@ -128,14 +144,14 @@ export class Game {
             } else {
                 this.currentGameState.terrains.push(terrain);
             }
-            this.renderTerrain();
+            this.markLayerDirty('terrain');
         }
         this.dbConnection.db.terrain.onInsert(terrainCallback);
         this.dbConnection.db.terrain.onUpdate(terrainCallback);
         
         const terrainDeleteCallback = (_ctx: EventContext, terrain: Terrain) => {
             this.currentGameState.terrains = this.currentGameState.terrains.filter(t => t.id !== terrain.id);
-            this.renderTerrain();
+            this.markLayerDirty('terrain');
         }
         this.dbConnection.db.terrain.onDelete(terrainDeleteCallback);
         
@@ -147,14 +163,14 @@ export class Game {
             } else {
                 this.currentGameState.underlays.push(underlay);
             }
-            this.renderUnderlays();
+            this.markLayerDirty('underlay');
         }
         this.dbConnection.db.underlay.onInsert(underlayCallback);
         this.dbConnection.db.underlay.onUpdate(underlayCallback);
         
         const underlayDeleteCallback = (_ctx: EventContext, underlay: Underlay) => {
             this.currentGameState.underlays = this.currentGameState.underlays.filter(u => u.id !== underlay.id);
-            this.renderUnderlays();
+            this.markLayerDirty('underlay');
         }
         this.dbConnection.db.underlay.onDelete(underlayDeleteCallback);
         
@@ -166,14 +182,14 @@ export class Game {
             } else {
                 this.currentGameState.overlays.push(overlay);
             }
-            this.renderOverlays();
+            this.markLayerDirty('overlay');
         }
         this.dbConnection.db.overlay.onInsert(overlayCallback);
         this.dbConnection.db.overlay.onUpdate(overlayCallback);
         
         const overlayDeleteCallback = (_ctx: EventContext, overlay: Overlay) => {
             this.currentGameState.overlays = this.currentGameState.overlays.filter(o => o.id !== overlay.id);
-            this.renderOverlays();
+            this.markLayerDirty('overlay');
         }
         this.dbConnection.db.overlay.onDelete(overlayDeleteCallback);
         
@@ -197,25 +213,45 @@ export class Game {
         this.canvasContainer.appendChild(canvas);
         return canvas;
     }
+    
+    private markLayerDirty(layer: keyof typeof this.dirtyLayers) {
+      this.dirtyLayers[layer] = true;
+      if (!this.renderScheduled) {
+        this.renderScheduled = true;
+        requestAnimationFrame(this.render.bind(this, this.currentGameState));
+      }
+    }
+    private forceRenderGameState(gameState: GameState) {
+        for (const key of Object.keys(this.dirtyLayers)) {
+            this.dirtyLayers[key as keyof typeof this.dirtyLayers] = true;
+        }
+        requestAnimationFrame(this.render.bind(this, gameState));
+    }
 
-    private renderTerrain() {
+    
+    private render(gameState: GameState) {
+      this.renderScheduled = false;
+    
+      if (this.dirtyLayers.terrain) {
         this.renderer.clearLayer('terrain');
-        this.renderer.drawShapes(this.ctx.terrain, this.currentGameState.terrains);
-    }
-
-    private renderUnits() {
+        this.renderer.drawShapes(this.ctx.terrain, gameState.terrains);
+        this.dirtyLayers.terrain = false;
+      }
+      if (this.dirtyLayers.units) {
         this.renderer.clearLayer('units');
-        this.renderer.drawShapes(this.ctx.units, this.currentGameState.units);
-    }
-
-    private renderUnderlays() {
+        this.renderer.drawShapes(this.ctx.units, gameState.units);
+        this.dirtyLayers.units = false;
+      }
+      if (this.dirtyLayers.underlay) {
         this.renderer.clearLayer('underlay');
-        this.renderer.drawShapes(this.ctx.underlay, this.currentGameState.underlays);
-    }
-
-    private renderOverlays() {
+        this.renderer.drawShapes(this.ctx.underlay, gameState.underlays);
+        this.dirtyLayers.underlay = false;
+      }
+      if (this.dirtyLayers.overlay) {
         this.renderer.clearLayer('overlay');
-        this.renderer.drawShapes(this.ctx.overlay, this.currentGameState.overlays);
+        this.renderer.drawShapes(this.ctx.overlay, gameState.overlays);
+        this.dirtyLayers.overlay = false;
+      }
     }
 
     // Draw from a specific action state instead of live data
@@ -223,33 +259,21 @@ export class Game {
         if (actionId === null) {
             // Reset to live data
             this.selectedAction = null;
-            this.renderAllLayers();
+            this.forceRenderGameState(this.currentGameState);
             return;
         }
         
         if (this.actionStates.has(actionId)) {
             this.selectedAction = actionId;
             const gameState = this.actionStates.get(actionId)!;
-            this.renderer.clearAllLayers();
-            this.renderer.drawShapes(this.ctx.underlay, gameState.underlays);
-            this.renderer.drawShapes(this.ctx.terrain, gameState.terrains);
-            this.renderer.drawShapes(this.ctx.units, gameState.units);
-            this.renderer.drawShapes(this.ctx.overlay, gameState.overlays);
+            this.forceRenderGameState(gameState);
         } else {
             console.error(`Action with ID ${actionId} not found`);
         }
     }
 
-    private renderAllLayers() {
-        this.renderer.clearAllLayers();
-        this.renderTerrain();
-        this.renderUnits();
-        this.renderUnderlays();
-        this.renderOverlays();
-    }
-
     start() {
-        this.renderAllLayers();
+        this.forceRenderGameState(this.currentGameState);
     }
 
     private createUI() {

@@ -34,37 +34,34 @@ export class Renderer {
 
     drawShapes(ctx: CanvasRenderingContext2D, shapes: Unit[] | Terrain[] | Underlay[] | Overlay[]) {
         for (const shape of shapes) {
-            this.drawShape(ctx, shape);
-        }
-    }
 
-    private drawShape(ctx: CanvasRenderingContext2D, shape: Unit | Terrain | Underlay | Overlay) {
-        ctx.fillStyle = shape.color;
-        ctx.strokeStyle = shape.color;
-        ctx.lineWidth = 2;
+            ctx.fillStyle = shape.color;
+            ctx.strokeStyle = shape.color;
+            ctx.lineWidth = 2;
 
-        // Add border for non-traversable terrain
-        if ('traversable' in shape && !shape.traversable) {
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-        }
+            // Add border for non-traversable terrain
+            if ('traversable' in shape && !shape.traversable) {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+            }
 
-        switch (shape.shapeType.tag) {
-            case "Circle":
-                this.drawCircle(ctx, shape);
-                break;
-            case "Rectangle":
-                this.drawRectangle(ctx, shape);
-                break;
-            case "Line":
-                this.drawLine(ctx, shape);
-                break;
-            case "Polygon":
-                this.drawPolygon(ctx, shape);
-                break;
-            case "Text":
-                this.drawText(ctx, shape);
-                break;
+            switch (shape.shapeType.tag) {
+                case "Circle":
+                    this.drawCircle(ctx, shape);
+                    break;
+                case "Rectangle":
+                    this.drawRectangle(ctx, shape);
+                    break;
+                case "Line":
+                    this.drawLine(ctx, shape);
+                    break;
+                case "Polygon":
+                    this.drawPolygon(ctx, shape);
+                    break;
+                case "Text":
+                    this.drawText(ctx, shape);
+                    break;
+            }
         }
     }
 
