@@ -3,6 +3,7 @@ use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
 use spacetimedb::SpacetimeType;
 use rapier2d::prelude::*;
+use std::time::Instant;
 
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = unit, public)]
@@ -153,9 +154,7 @@ fn create_shape_obj(shape_type: &ShapeType, positions: &[Position], sizes: &[u32
             if sizes.len() < 2 {
                 return None;
             }
-            let half_width = sizes[0] as f32 / 2.0;
-            let half_height = sizes[1] as f32 / 2.0;
-            Some(SharedShape::cuboid(half_width, half_height))
+            Some(SharedShape::cuboid(sizes[0] as f32, sizes[1] as f32))
         },
         ShapeType::Polygon => {
             if positions.len() < 3 {
@@ -198,9 +197,8 @@ fn create_collider(
     
     let position = match shape_type {
         ShapeType::Circle => {
-            let radius = sizes[0] as f32 / 2.0;
-            let x = positions[0].x as f32 + radius;
-            let y = positions[0].y as f32 + radius;
+            let x = positions[0].x as f32;
+            let y = positions[0].y as f32;
             Isometry::translation(x, y)
         },
         ShapeType::Rectangle => {
@@ -283,6 +281,15 @@ pub fn init(_ctx: &ReducerContext) {
         size: vec![50],  
         color: "#8b4513".to_string(),  
         position: vec![Position { x: 100, y: 300 }],
+        traversable: false,
+    });
+    
+    _ctx.db.terrain().insert(Terrain {
+        id: 5,
+        shape_type: ShapeType::Line,
+        size: vec![3],
+        color: "rgba(255, 0, 0, 0.8)".to_string(),
+        position: vec![Position { x: 50, y: 50 }, Position { x: 550, y: 350 }],
         traversable: false,
     });
 
