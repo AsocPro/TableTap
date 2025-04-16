@@ -2,6 +2,7 @@ use spacetimedb::{ReducerContext, Table};
 use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
 use spacetimedb::SpacetimeType;
+use rapier2d::prelude::*;
 
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = unit, public)]
@@ -13,7 +14,6 @@ pub struct Unit {
     color: String,
     position: Vec<Position>,
 }
-
 
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = terrain, public)]
@@ -73,6 +73,7 @@ pub struct Position {
     x: u32,
     y: u32,
 }
+
 #[derive(SpacetimeType, Copy, Clone, Debug)]
 pub enum ShapeType {
     Circle,
@@ -90,62 +91,142 @@ fn check_shape_collision(
     shape2_pos: &[Position],
     shape2_size: &[u32]
 ) -> bool {
-    match (shape1_type, shape2_type) {
-        // Circle to Circle
-        (ShapeType::Circle, ShapeType::Circle) => {
-            let dx = shape1_pos[0].x as i32 - shape2_pos[0].x as i32;
-            let dy = shape1_pos[0].y as i32 - shape2_pos[0].y as i32;
-            let distance_squared = dx * dx + dy * dy;
-            let min_distance = (shape1_size[0] + shape2_size[0]) / 2;
-            distance_squared < (min_distance * min_distance) as i32
+    let mut bodies = RigidBodySet::new();
+    let mut colliders = ColliderSet::new();
+    
+    let shape1_handle = match create_collider(shape1_type, shape1_pos, shape1_size) {
+        Some((rigid_body, collider)) => {
+            let body_handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, body_handle, &mut bodies)
         },
-        // Rectangle to Rectangle
-        (ShapeType::Rectangle, ShapeType::Rectangle) => {
-            // Check if rectangles overlap using AABB collision
-            let r1_left = shape1_pos[0].x;
-            let r1_right = shape1_pos[0].x + shape1_size[0];
-            let r1_top = shape1_pos[0].y;
-            let r1_bottom = shape1_pos[0].y + shape1_size[1];
-            
-            let r2_left = shape2_pos[0].x;
-            let r2_right = shape2_pos[0].x + shape2_size[0];
-            let r2_top = shape2_pos[0].y;
-            let r2_bottom = shape2_pos[0].y + shape2_size[1];
+        None => return false,
+    };
+    
+    let shape_obj = match create_shape_obj(shape1_type, shape1_pos, shape1_size) {
+        Some(shape) => shape,
+        None => return false,
+    };
 
-            r1_left < r2_right && r1_right > r2_left &&
-            r1_top < r2_bottom && r1_bottom > r2_top
+    let new_pos = Isometry::new(vector![shape1_pos[0].x as f32, shape1_pos[0].y as f32], 0.0);
+    
+    let shape2_handle = match create_collider(shape2_type, shape2_pos, shape2_size) {
+        Some((rigid_body, collider)) => {
+            let body_handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, body_handle, &mut bodies)
         },
-        // Circle to Rectangle
-        (ShapeType::Circle, ShapeType::Rectangle) | (ShapeType::Rectangle, ShapeType::Circle) => {
-            let (circle_pos, circle_size, rect_pos, rect_size) = if matches!(shape1_type, ShapeType::Circle) {
-                (shape1_pos, shape1_size, shape2_pos, shape2_size)
-            } else {
-                (shape2_pos, shape2_size, shape1_pos, shape1_size)
-            };
-
-            let circle_radius = circle_size[0] / 2;
-            let circle_x = circle_pos[0].x;
-            let circle_y = circle_pos[0].y;
-
-            // Find closest point on rectangle to circle center
-            let closest_x = circle_x.max(rect_pos[0].x).min(rect_pos[0].x + rect_size[0]);
-            let closest_y = circle_y.max(rect_pos[0].y).min(rect_pos[0].y + rect_size[1]);
-
-            // Calculate distance from closest point to circle center
-            let dx = circle_x as i32 - closest_x as i32;
-            let dy = circle_y as i32 - closest_y as i32;
-            let distance_squared = dx * dx + dy * dy;
-
-            distance_squared < (circle_radius * circle_radius) as i32
+        None => return false,
+    };
+    
+    let mut pipeline = QueryPipeline::new();
+    pipeline.update(&bodies, &colliders);
+    
+    let mut colliding = false;
+    pipeline.intersections_with_shape(
+        &bodies,
+        &colliders,
+        &new_pos,
+        &*shape_obj,
+        QueryFilter::new().exclude_collider(shape1_handle),
+        |_| {
+            colliding = true;
+            false 
         },
-        // All other shape combinations don't trigger collision
-        _ => false
+    );
+    
+    colliding
+}
+
+fn create_shape_obj(shape_type: &ShapeType, positions: &[Position], sizes: &[u32]) -> Option<SharedShape> {
+    if positions.is_empty() {
+        return None;
     }
+
+    match shape_type {
+        ShapeType::Circle => {
+            if sizes.is_empty() {
+                return None;
+            }
+            let radius = sizes[0] as f32 / 2.0;
+            Some(SharedShape::ball(radius))
+        },
+        ShapeType::Rectangle => {
+            if sizes.len() < 2 {
+                return None;
+            }
+            let half_width = sizes[0] as f32 / 2.0;
+            let half_height = sizes[1] as f32 / 2.0;
+            Some(SharedShape::cuboid(half_width, half_height))
+        },
+        ShapeType::Polygon => {
+            if positions.len() < 3 {
+                return None; // Need at least 3 points for a polygon
+            }
+            
+            let mut vertices = Vec::with_capacity(positions.len());
+            for pos in positions {
+                vertices.push(Point::new(pos.x as f32, pos.y as f32));
+            }
+            
+            // Convert the vertices to a convex polygon shape
+            match SharedShape::convex_polyline(vertices) {
+                Some(shape) => Some(shape),
+                None => None,
+            }
+        },
+        ShapeType::Line => {
+            if positions.len() < 2 {
+                return None;
+            }
+            let p1 = Point::new(positions[0].x as f32, positions[0].y as f32);
+            let p2 = Point::new(positions[1].x as f32, positions[1].y as f32);
+            Some(SharedShape::segment(p1, p2))
+        },
+        _ => None, // Text shapes don't have collisions
+    }
+}
+
+fn create_collider(
+    shape_type: &ShapeType, 
+    positions: &[Position], 
+    sizes: &[u32]
+) -> Option<(RigidBody, Collider)> {
+    if positions.is_empty() {
+        return None;
+    }
+    
+    let shape = create_shape_obj(shape_type, positions, sizes)?;
+    
+    let position = match shape_type {
+        ShapeType::Circle => {
+            let radius = sizes[0] as f32 / 2.0;
+            let x = positions[0].x as f32 + radius;
+            let y = positions[0].y as f32 + radius;
+            Isometry::translation(x, y)
+        },
+        ShapeType::Rectangle => {
+            let half_width = sizes[0] as f32 / 2.0;
+            let half_height = sizes[1] as f32 / 2.0;
+            let x = positions[0].x as f32 + half_width;
+            let y = positions[0].y as f32 + half_height;
+            Isometry::translation(x, y)
+        },
+        ShapeType::Polygon | ShapeType::Line => {
+            Isometry::identity()
+        },
+        _ => Isometry::identity(),
+    };
+    
+    let rigid_body = RigidBodyBuilder::fixed()
+        .position(position)
+        .build();
+        
+    let collider = ColliderBuilder::new(shape).build();
+    
+    Some((rigid_body, collider))
 }
 
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
-    // Called when the module is initially published
     _ctx.db.unit().insert(Unit { 
         id: 1, 
         shape_type: ShapeType::Circle,
@@ -169,7 +250,6 @@ pub fn init(_ctx: &ReducerContext) {
         position: vec![Position { x: 100, y: 100 }],
     });
     
-    // Add some initial terrain (traversable)
     _ctx.db.terrain().insert(Terrain { 
         id: 1, 
         shape_type: ShapeType::Rectangle,
@@ -188,12 +268,11 @@ pub fn init(_ctx: &ReducerContext) {
         traversable: true,
     });
 
-    // Add non-traversable terrain (obstacles)
     _ctx.db.terrain().insert(Terrain { 
         id: 3, 
         shape_type: ShapeType::Rectangle,
         size: vec![120, 60],
-        color: "#8b4513".to_string(),  // Brown color for obstacles
+        color: "#8b4513".to_string(),  
         position: vec![Position { x: 400, y: 150 }, Position { x: 520, y: 210 }],
         traversable: false,
     });
@@ -201,13 +280,12 @@ pub fn init(_ctx: &ReducerContext) {
     _ctx.db.terrain().insert(Terrain { 
         id: 4, 
         shape_type: ShapeType::Circle,
-        size: vec![50],  // Radius of 50
-        color: "#8b4513".to_string(),  // Brown color for obstacles
+        size: vec![50],  
+        color: "#8b4513".to_string(),  
         position: vec![Position { x: 100, y: 300 }],
         traversable: false,
     });
 
-    // Add example underlays
     _ctx.db.underlay().insert(Underlay {
         id: 1,
         shape_type: ShapeType::Circle,
@@ -224,7 +302,6 @@ pub fn init(_ctx: &ReducerContext) {
         position: vec![Position { x: 100, y: 100 }, Position { x: 200, y: 200 }],
     });
 
-    // Add example overlays
     _ctx.db.overlay().insert(Overlay {
         id: 1,
         shape_type: ShapeType::Line,
@@ -257,12 +334,10 @@ pub fn init(_ctx: &ReducerContext) {
 
 #[spacetimedb::reducer(client_connected)]
 pub fn identity_connected(_ctx: &ReducerContext) {
-    // Called everytime a new client connects
 }
 
 #[spacetimedb::reducer(client_disconnected)]
 pub fn identity_disconnected(_ctx: &ReducerContext) {
-    // Called everytime a client disconnects
 }
 
 #[spacetimedb::reducer]
@@ -316,7 +391,6 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 
 #[spacetimedb::reducer]
 pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
-    // Check units
     for unit in ctx.db.unit().iter() {
         let center_x = unit.position[0].x + unit.size[0]/2;
         let center_y = unit.position[0].y + unit.size[0]/2;
@@ -327,7 +401,6 @@ pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
             return;
         }
     }
-    // Check terrain
     for terrain in ctx.db.terrain().iter() {
         if x >= terrain.position[0].x && x <= terrain.position[0].x + terrain.size[0] &&
            y >= terrain.position[0].y && y <= terrain.position[0].y + terrain.size[1] {
@@ -339,11 +412,9 @@ pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
 
 #[spacetimedb::reducer]
 pub fn delete_all(ctx: &ReducerContext) {
-    // Delete all units
     for unit in ctx.db.unit().iter() {
         ctx.db.unit().id().delete(unit.id);
     }
-    // Delete all terrain
     for terrain in ctx.db.terrain().iter() {
         ctx.db.terrain().id().delete(terrain.id);
     }
@@ -351,14 +422,11 @@ pub fn delete_all(ctx: &ReducerContext) {
 
 #[spacetimedb::reducer]
 pub fn roll_dice(ctx: &ReducerContext) {
-    // Generate a random number between 1 and 6
     let mut rng = ctx.rng();
     let dice_value = rng.gen_range(1..=6);
     
-    // Create a description
     let description = format!("🎲 Dice Roll: {}", dice_value);
     
-    // Add to actions table with game state
     ctx.db.action().insert(Action {
         id: 0,
         timestamp: ctx.timestamp,
@@ -375,7 +443,6 @@ pub fn roll_dice(ctx: &ReducerContext) {
 
 #[spacetimedb::reducer]
 pub fn chat_message(ctx: &ReducerContext, message: String) {
-    // Create a new action with the chat message
     ctx.db.action().insert(Action {
         id: 0,
         timestamp: ctx.timestamp,
@@ -437,7 +504,6 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
 pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32) {
     match event_type.as_str() {
         "mousedown" => {
-            // Find unit under cursor
             for unit in ctx.db.unit().iter() {
                 match unit.shape_type {
                     ShapeType::Circle => {
@@ -447,7 +513,6 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                                      (y as i32 - center_y as i32).pow(2)) as f64;
                         
                         if distance <= (unit.size[0]/2).pow(2) as f64 {
-                            // Store selected unit in a new table
                             ctx.db.selected_unit().insert(SelectedUnit { 
                                 id: unit.id,
                                 start_x: x,
@@ -475,18 +540,16 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                             break;
                         }
                     },
-                    _ => continue // Skip other shapes
+                    _ => continue 
                 }
             }
         }
         "mousemove" => {
             if let Some(selected) = ctx.db.selected_unit().iter().next() {
                 if let Some(unit) = ctx.db.unit().id().find(selected.id) {
-                    // Calculate new position based on offset
                     let new_x = unit.position[0].x + offset_x;
                     let new_y = unit.position[0].y + offset_y;
                     
-                    // Check for collisions with canvas boundaries
                     let canvas_width = 600;
                     let canvas_height = 400;
                     
@@ -505,7 +568,7 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                                 within_bounds = false;
                             }
                         },
-                        _ => {} // Other shapes don't check bounds
+                        _ => {} 
                     }
                     
                     if !within_bounds {
@@ -515,13 +578,11 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     let new_pos = vec![Position { x: new_x, y: new_y }];
                     let mut will_collide = false;
                     
-                    // Check collision with other units
                     for other_unit in ctx.db.unit().iter() {
                         if other_unit.id == unit.id {
                             continue;
                         }
 
-                        // Only check collisions for circles and rectangles
                         match (unit.shape_type, other_unit.shape_type) {
                             (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
                                 if check_shape_collision(
@@ -540,14 +601,12 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                         }
                     }
                     
-                    // Check collision with terrain if no unit collision found
                     if !will_collide {
                         for terrain in ctx.db.terrain().iter() {
                             if terrain.traversable {
                                 continue;
                             }
 
-                            // Only check collisions for circles and rectangles
                             match (unit.shape_type, terrain.shape_type) {
                                 (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
                                     if check_shape_collision(
@@ -567,7 +626,6 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                         }
                     }
 
-                    // Only move if there's no collision
                     if !will_collide {
                         ctx.db.unit().id().update(Unit { 
                             id: unit.id, 
@@ -581,7 +639,6 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
             }
         }
         "mouseup" => {
-            // Clear selected unit
             for selected in ctx.db.selected_unit().iter() {
                 ctx.db.selected_unit().id().delete(selected.id);
             }
