@@ -252,6 +252,25 @@ fn check_shape_collision_all(
             collider_handles.push(col_handle);
         }
     }
+    // Add board borders as lines (segments)
+    const BOARD_WIDTH: u32 = 600;
+    const BOARD_HEIGHT: u32 = 400;
+    let borders = [
+        // Top border
+        (Position { x: 0, y: 0 }, Position { x: BOARD_WIDTH, y: 0 }),
+        // Right border
+        (Position { x: BOARD_WIDTH, y: 0 }, Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }),
+        // Bottom border
+        (Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }, Position { x: 0, y: BOARD_HEIGHT }),
+        // Left border
+        (Position { x: 0, y: BOARD_HEIGHT }, Position { x: 0, y: 0 }),
+    ];
+    for (start, end) in borders.iter() {
+        if let Some((rb, col)) = create_collider(&ShapeType::Line, &[start.clone(), end.clone()], &[1]) {
+            let body_handle = bodies.insert(rb);
+            colliders.insert_with_parent(col, body_handle, &mut bodies);
+        }
+    }
     // Prepare the moving shape
     let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
         Some(s) => s,
@@ -609,31 +628,6 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     let new_x = unit.position[0].x + offset_x;
                     let new_y = unit.position[0].y + offset_y;
                     
-                    let canvas_width = 600;
-                    let canvas_height = 400;
-                    
-                    let mut within_bounds = true;
-                    match unit.shape_type {
-                        ShapeType::Circle => {
-                            let radius = unit.size[0] / 2;
-                            if new_x < radius || new_x > canvas_width - radius ||
-                               new_y < radius || new_y > canvas_height - radius {
-                                within_bounds = false;
-                            }
-                        },
-                        ShapeType::Rectangle => {
-                            if new_x > canvas_width - unit.size[0] || new_y > canvas_height - unit.size[1] ||
-                               new_x < 0 || new_y < 0 {
-                                within_bounds = false;
-                            }
-                        },
-                        _ => {} 
-                    }
-                    
-                    if !within_bounds {
-                        return;
-                    }
-
                     let new_pos = vec![Position { x: new_x, y: new_y }];
                     let units: Vec<Unit> = ctx.db.unit().iter().collect();
                     let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
