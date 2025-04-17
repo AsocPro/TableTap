@@ -221,48 +221,51 @@ fn create_collider(
     Some((rigid_body, collider))
 }
 
+fn build_world_colliders(units: &[Unit], terrains: &[Terrain]) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
+    let mut bodies = RigidBodySet::new();
+    let mut colliders = ColliderSet::new();
+    let mut handle_to_id = std::collections::HashMap::new();
+    for unit in units {
+        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
+            let body_handle = bodies.insert(rb);
+            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
+            handle_to_id.insert(col_handle, unit.id);
+        }
+    }
+    for terrain in terrains {
+        if terrain.traversable { continue; }
+        if let Some((rb, col)) = create_collider(&terrain.shape_type, &terrain.position, &terrain.size) {
+            let body_handle = bodies.insert(rb);
+            colliders.insert_with_parent(col, body_handle, &mut bodies);
+            // No mapping to unit id for terrain
+        }
+    }
+    (bodies, colliders, handle_to_id)
+}
+
 fn check_shape_collision_all(
     moving_shape_type: &ShapeType,
     moving_pos: &[Position],
     moving_size: &[u32],
     units: &[Unit],
     terrains: &[Terrain],
-    skip_unit_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
+    skip_unit_id: Option<u64>,
 ) -> bool {
-    let mut bodies = RigidBodySet::new();
-    let mut colliders = ColliderSet::new();
-    let mut collider_handles = Vec::new();
-    // Add all units
-    for unit in units {
-        if let Some(skip_id) = skip_unit_id {
-            if unit.id == skip_id { continue; }
-        }
-        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
-            let body_handle = bodies.insert(rb);
-            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            collider_handles.push(col_handle);
-        }
-    }
-    // Add all terrain
-    for terrain in terrains {
-        if terrain.traversable { continue; }
-        if let Some((rb, col)) = create_collider(&terrain.shape_type, &terrain.position, &terrain.size) {
-            let body_handle = bodies.insert(rb);
-            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            collider_handles.push(col_handle);
+    let (mut bodies, mut colliders, _handle_to_id) = build_world_colliders(units, terrains);
+    // Remove the moving unit if skip_unit_id is set (to avoid self-collision)
+    if let Some(skip_id) = skip_unit_id {
+        let to_remove: Vec<_> = _handle_to_id.iter().filter(|(_, &id)| id == skip_id).map(|(h, _)| *h).collect();
+        for h in to_remove {
+            colliders.remove(h, &mut bodies, true);
         }
     }
     // Add board borders as lines (segments)
     const BOARD_WIDTH: u32 = 600;
     const BOARD_HEIGHT: u32 = 400;
     let borders = [
-        // Top border
         (Position { x: 0, y: 0 }, Position { x: BOARD_WIDTH, y: 0 }),
-        // Right border
         (Position { x: BOARD_WIDTH, y: 0 }, Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }),
-        // Bottom border
         (Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }, Position { x: 0, y: BOARD_HEIGHT }),
-        // Left border
         (Position { x: 0, y: BOARD_HEIGHT }, Position { x: 0, y: 0 }),
     ];
     for (start, end) in borders.iter() {
@@ -271,7 +274,6 @@ fn check_shape_collision_all(
             colliders.insert_with_parent(col, body_handle, &mut bodies);
         }
     }
-    // Prepare the moving shape
     let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
         Some(s) => s,
         None => return false,
@@ -294,22 +296,8 @@ fn check_shape_collision_all(
     colliding
 }
 
-fn build_unit_colliders(units: &[Unit]) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
-    let mut bodies = RigidBodySet::new();
-    let mut colliders = ColliderSet::new();
-    let mut handle_to_id = std::collections::HashMap::new();
-    for unit in units {
-        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
-            let body_handle = bodies.insert(rb);
-            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            handle_to_id.insert(col_handle, unit.id);
-        }
-    }
-    (bodies, colliders, handle_to_id)
-}
-
-fn find_unit_at_point(units: &[Unit], x: u32, y: u32) -> Option<u64> {
-    let (bodies, colliders, handle_to_id) = build_unit_colliders(units);
+fn find_unit_at_point(units: &[Unit], terrains: &[Terrain], x: u32, y: u32) -> Option<u64> {
+    let (bodies, colliders, handle_to_id) = build_world_colliders(units, terrains);
     let mut pipeline = QueryPipeline::new();
     pipeline.update(&bodies, &colliders);
     let click_point = Point::new(x as f32, y as f32);
@@ -507,7 +495,8 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 #[spacetimedb::reducer]
 pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
     let units: Vec<Unit> = ctx.db.unit().iter().collect();
-    if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+    let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+    if let Some(unit_id) = find_unit_at_point(&units, &terrains, x, y) {
         ctx.db.unit().id().delete(unit_id);
         return;
     }
@@ -615,7 +604,8 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
     match event_type.as_str() {
         "mousedown" => {
             let units: Vec<Unit> = ctx.db.unit().iter().collect();
-            if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+            let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+            if let Some(unit_id) = find_unit_at_point(&units, &terrains, x, y) {
                 ctx.db.selected_unit().insert(SelectedUnit { 
                     id: unit_id,
                     start_x: x,
