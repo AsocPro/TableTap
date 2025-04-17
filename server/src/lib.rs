@@ -294,6 +294,43 @@ fn check_shape_collision_all(
     colliding
 }
 
+fn build_unit_colliders(units: &[Unit]) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
+    let mut bodies = RigidBodySet::new();
+    let mut colliders = ColliderSet::new();
+    let mut handle_to_id = std::collections::HashMap::new();
+    for unit in units {
+        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
+            let body_handle = bodies.insert(rb);
+            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
+            handle_to_id.insert(col_handle, unit.id);
+        }
+    }
+    (bodies, colliders, handle_to_id)
+}
+
+fn find_unit_at_point(units: &[Unit], x: u32, y: u32) -> Option<u64> {
+    let (bodies, colliders, handle_to_id) = build_unit_colliders(units);
+    let mut pipeline = QueryPipeline::new();
+    pipeline.update(&bodies, &colliders);
+    let click_point = Point::new(x as f32, y as f32);
+    let mut found_unit_id = None;
+    pipeline.intersections_with_point(
+        &bodies,
+        &colliders,
+        &click_point,
+        QueryFilter::default(),
+        |handle| {
+            if let Some(&unit_id) = handle_to_id.get(&handle) {
+                found_unit_id = Some(unit_id);
+                false
+            } else {
+                true
+            }
+        },
+    );
+    found_unit_id
+}
+
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
     _ctx.db.unit().insert(Unit { 
@@ -469,15 +506,10 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 
 #[spacetimedb::reducer]
 pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
-    for unit in ctx.db.unit().iter() {
-        let center_x = unit.position[0].x + unit.size[0]/2;
-        let center_y = unit.position[0].y + unit.size[0]/2;
-        let distance = ((x - center_x).pow(2) + (y - center_y).pow(2)) as f64;
-        
-        if distance <= (unit.size[0]/2).pow(2) as f64 {
-            ctx.db.unit().id().delete(unit.id);
-            return;
-        }
+    let units: Vec<Unit> = ctx.db.unit().iter().collect();
+    if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+        ctx.db.unit().id().delete(unit_id);
+        return;
     }
     for terrain in ctx.db.terrain().iter() {
         if x >= terrain.position[0].x && x <= terrain.position[0].x + terrain.size[0] &&
@@ -582,44 +614,15 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
 pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32) {
     match event_type.as_str() {
         "mousedown" => {
-            for unit in ctx.db.unit().iter() {
-                match unit.shape_type {
-                    ShapeType::Circle => {
-                        let center_x = unit.position[0].x;
-                        let center_y = unit.position[0].y;
-                        let distance = ((x as i32 - center_x as i32).pow(2) + 
-                                     (y as i32 - center_y as i32).pow(2)) as f64;
-                        
-                        if distance <= (unit.size[0]/2).pow(2) as f64 {
-                            ctx.db.selected_unit().insert(SelectedUnit { 
-                                id: unit.id,
-                                start_x: x,
-                                start_y: y,
-                                offset_x: 0,
-                                offset_y: 0
-                            });
-                            break;
-                        }
-                    },
-                    ShapeType::Rectangle => {
-                        let left = unit.position[0].x;
-                        let right = unit.position[0].x + unit.size[0];
-                        let top = unit.position[0].y;
-                        let bottom = unit.position[0].y + unit.size[1];
-                        
-                        if x >= left && x <= right && y >= top && y <= bottom {
-                            ctx.db.selected_unit().insert(SelectedUnit { 
-                                id: unit.id,
-                                start_x: x,
-                                start_y: y,
-                                offset_x: 0,
-                                offset_y: 0
-                            });
-                            break;
-                        }
-                    },
-                    _ => continue 
-                }
+            let units: Vec<Unit> = ctx.db.unit().iter().collect();
+            if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+                ctx.db.selected_unit().insert(SelectedUnit { 
+                    id: unit_id,
+                    start_x: x,
+                    start_y: y,
+                    offset_x: 0,
+                    offset_y: 0
+                });
             }
         }
         "mousemove" => {

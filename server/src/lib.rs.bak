@@ -1,0 +1,140 @@
+use spacetimedb::{ReducerContext, Table};
+use spacetimedb::rand::Rng;
+use spacetimedb::Timestamp;
+use spacetimedb::SpacetimeType;
+use rapier2d::prelude::*;
+
+// ... (rest of the code remains the same)
+
+fn check_shape_collision(
+    shape1_type: &ShapeType,
+    shape1_pos: &[Position],
+    shape1_size: &[u32],
+    shape2_type: &ShapeType,
+    shape2_pos: &[Position],
+    shape2_size: &[u32]
+) -> bool {
+    // Create a physics query pipeline for collision detection
+    let mut bodies = RigidBodySet::new();
+    let mut colliders = ColliderSet::new();
+    
+    // Create shape1 collider and add to the physics world
+    let shape1_handle = match create_collider(shape1_type, shape1_pos, shape1_size) {
+        Some((rigid_body, collider)) => {
+            let body_handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, body_handle, &mut bodies)
+        },
+        None => return false,
+    };
+    
+    // Create shape2 collider and add to the physics world
+    let shape2_handle = match create_collider(shape2_type, shape2_pos, shape2_size) {
+        Some((rigid_body, collider)) => {
+            let body_handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, body_handle, &mut bodies)
+        },
+        None => return false,
+    };
+    
+    // Create query pipeline and update it with our bodies and colliders
+    let mut pipeline = QueryPipeline::new();
+    pipeline.update(&bodies, &colliders);
+    
+    // Check for intersection between shape1 and shape2
+    let mut colliding = false;
+    pipeline.intersections_with_collider(
+        &colliders,
+        shape1_handle,
+        QueryFilter::new().exclude_collider(shape1_handle),
+        |_| {
+            colliding = true;
+            false // stop traversal when first collision is found
+        },
+    );
+    
+    colliding
+}
+
+// Create a rigid body and collider for a given shape
+fn create_collider(
+    shape_type: &ShapeType, 
+    positions: &[Position], 
+    sizes: &[u32]
+) -> Option<(RigidBody, Collider)> {
+    if positions.is_empty() {
+        return None;
+    }
+
+    // Create the appropriate shape based on the shape type
+    let shape = match shape_type {
+        ShapeType::Circle => {
+            if sizes.is_empty() {
+                return None;
+            }
+            let radius = sizes[0] as f32 / 2.0;
+            SharedShape::ball(radius)
+        },
+        ShapeType::Rectangle => {
+            if sizes.len() < 2 {
+                return None;
+            }
+            let half_width = sizes[0] as f32 / 2.0;
+            let half_height = sizes[1] as f32 / 2.0;
+            SharedShape::cuboid(half_width, half_height)
+        },
+        ShapeType::Polygon => {
+            if positions.len() < 3 {
+                return None;
+            }
+            
+            let mut vertices = Vec::with_capacity(positions.len());
+            for pos in positions {
+                vertices.push(Point::new(pos.x as f32, pos.y as f32));
+            }
+            
+            match SharedShape::convex_polyline(vertices) {
+                Ok(shape) => shape,
+                Err(_) => return None,
+            }
+        },
+        ShapeType::Line => {
+            if positions.len() < 2 {
+                return None;
+            }
+            let p1 = Point::new(positions[0].x as f32, positions[0].y as f32);
+            let p2 = Point::new(positions[1].x as f32, positions[1].y as f32);
+            SharedShape::segment(p1, p2)
+        },
+        _ => return None, // Text shapes don't have collisions
+    };
+    
+    // Create position isometry (translation and rotation)
+    let position = match shape_type {
+        ShapeType::Circle => {
+            let radius = sizes[0] as f32 / 2.0;
+            let x = positions[0].x as f32 + radius;
+            let y = positions[0].y as f32 + radius;
+            Isometry::translation(x, y)
+        },
+        ShapeType::Rectangle => {
+            let half_width = sizes[0] as f32 / 2.0;
+            let half_height = sizes[1] as f32 / 2.0;
+            let x = positions[0].x as f32 + half_width;
+            let y = positions[0].y as f32 + half_height;
+            Isometry::translation(x, y)
+        },
+        // For polygons and lines, use the first position for the body
+        _ => Isometry::translation(positions[0].x as f32, positions[0].y as f32),
+    };
+    
+    // Create rigid body and collider
+    let rigid_body = RigidBodyBuilder::fixed()
+        .position(position)
+        .build();
+        
+    let collider = ColliderBuilder::new(shape).build();
+    
+    Some((rigid_body, collider))
+}
+
+// ... (rest of the code remains the same)
