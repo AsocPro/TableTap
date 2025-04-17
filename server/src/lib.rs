@@ -154,7 +154,7 @@ fn create_shape_obj(shape_type: &ShapeType, positions: &[Position], sizes: &[u32
             if sizes.len() < 2 {
                 return None;
             }
-            Some(SharedShape::cuboid(sizes[0] as f32, sizes[1] as f32))
+            Some(SharedShape::cuboid(sizes[0] as f32 / 2.0, sizes[1] as f32 / 2.0))
         },
         ShapeType::Polygon => {
             if positions.len() < 3 {
@@ -202,10 +202,8 @@ fn create_collider(
             Isometry::translation(x, y)
         },
         ShapeType::Rectangle => {
-            let half_width = sizes[0] as f32 / 2.0;
-            let half_height = sizes[1] as f32 / 2.0;
-            let x = positions[0].x as f32 + half_width;
-            let y = positions[0].y as f32 + half_height;
+            let x = positions[0].x as f32;
+            let y = positions[0].y as f32;
             Isometry::translation(x, y)
         },
         ShapeType::Polygon | ShapeType::Line => {
