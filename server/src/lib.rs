@@ -221,6 +221,59 @@ fn create_collider(
     Some((rigid_body, collider))
 }
 
+fn check_shape_collision_all(
+    moving_shape_type: &ShapeType,
+    moving_pos: &[Position],
+    moving_size: &[u32],
+    units: &[Unit],
+    terrains: &[Terrain],
+    skip_unit_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
+) -> bool {
+    let mut bodies = RigidBodySet::new();
+    let mut colliders = ColliderSet::new();
+    let mut collider_handles = Vec::new();
+    // Add all units
+    for unit in units {
+        if let Some(skip_id) = skip_unit_id {
+            if unit.id == skip_id { continue; }
+        }
+        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
+            let body_handle = bodies.insert(rb);
+            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
+            collider_handles.push(col_handle);
+        }
+    }
+    // Add all terrain
+    for terrain in terrains {
+        if let Some((rb, col)) = create_collider(&terrain.shape_type, &terrain.position, &terrain.size) {
+            let body_handle = bodies.insert(rb);
+            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
+            collider_handles.push(col_handle);
+        }
+    }
+    // Prepare the moving shape
+    let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
+        Some(s) => s,
+        None => return false,
+    };
+    let moving_iso = Isometry::new(vector![moving_pos[0].x as f32, moving_pos[0].y as f32], 0.0);
+    let mut pipeline = QueryPipeline::new();
+    pipeline.update(&bodies, &colliders);
+    let mut colliding = false;
+    pipeline.intersections_with_shape(
+        &bodies,
+        &colliders,
+        &moving_iso,
+        &*moving_shape,
+        QueryFilter::default(),
+        |_| {
+            colliding = true;
+            false
+        },
+    );
+    colliding
+}
+
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
     _ctx.db.unit().insert(Unit { 
@@ -581,55 +634,16 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     }
 
                     let new_pos = vec![Position { x: new_x, y: new_y }];
-                    let mut will_collide = false;
-                    
-                    for other_unit in ctx.db.unit().iter() {
-                        if other_unit.id == unit.id {
-                            continue;
-                        }
-
-                        match (unit.shape_type, other_unit.shape_type) {
-                            (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
-                                if check_shape_collision(
-                                    &unit.shape_type,
-                                    &new_pos,
-                                    &unit.size,
-                                    &other_unit.shape_type,
-                                    &other_unit.position,
-                                    &other_unit.size
-                                ) {
-                                    will_collide = true;
-                                    break;
-                                }
-                            },
-                            _ => continue
-                        }
-                    }
-                    
-                    if !will_collide {
-                        for terrain in ctx.db.terrain().iter() {
-                            if terrain.traversable {
-                                continue;
-                            }
-
-                            match (unit.shape_type, terrain.shape_type) {
-                                (ShapeType::Circle, _) | (ShapeType::Rectangle, _) => {
-                                    if check_shape_collision(
-                                        &unit.shape_type,
-                                        &new_pos,
-                                        &unit.size,
-                                        &terrain.shape_type,
-                                        &terrain.position,
-                                        &terrain.size
-                                    ) {
-                                        will_collide = true;
-                                        break;
-                                    }
-                                },
-                                _ => continue
-                            }
-                        }
-                    }
+                    let units: Vec<Unit> = ctx.db.unit().iter().collect();
+                    let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+                    let will_collide = check_shape_collision_all(
+                        &unit.shape_type,
+                        &new_pos,
+                        &unit.size,
+                        &units,
+                        &terrains,
+                        Some(unit.id),
+                    );
 
                     if !will_collide {
                         ctx.db.unit().id().update(Unit { 
