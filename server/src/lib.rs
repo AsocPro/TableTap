@@ -245,6 +245,7 @@ fn check_shape_collision_all(
     }
     // Add all terrain
     for terrain in terrains {
+        if terrain.traversable { continue; }
         if let Some((rb, col)) = create_collider(&terrain.shape_type, &terrain.position, &terrain.size) {
             let body_handle = bodies.insert(rb);
             let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
