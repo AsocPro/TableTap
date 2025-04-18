@@ -36,7 +36,7 @@ export class Game {
 
     constructor(canvasId: string) {
         this.dbConnection = DbConnection.builder()
-            .withUri('ws://192.168.1.222:3000')
+            .withUri('ws://localhost:3000')
             .withModuleName('tabletap')
             .onConnect((dbConnection, identity, token) => {
                 dbConnection.subscriptionBuilder()
