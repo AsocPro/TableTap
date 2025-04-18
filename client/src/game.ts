@@ -136,8 +136,11 @@ export class Game {
         };
 
         const deleteCallback = (_ctx: EventContext, row: T) => {
-            entities = entities.filter(e => e.id !== row.id);
-            this.markLayerDirty(layerName);
+            const index = entities.findIndex(e => e.id === row.id);
+            if (index >= 0) {
+                entities.splice(index, 1); // Remove the item from the array in-place
+                this.markLayerDirty(layerName);
+            }
         };
 
         collection.onInsert(upsertCallback);
