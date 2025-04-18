@@ -51,6 +51,7 @@ trait Collidable {
     fn shape_type(&self) -> &ShapeType;
     fn position(&self) -> &Vec<Position>;
     fn size(&self) -> &Vec<u32>;
+    fn traversable(&self) -> bool;
 }
 
 #[derive(Clone, Debug)]
@@ -69,6 +70,7 @@ impl Collidable for Unit {
     fn shape_type(&self) -> &ShapeType { &self.shape_type }
     fn position(&self) -> &Vec<Position> { &self.position }
     fn size(&self) -> &Vec<u32> { &self.size }
+    fn traversable(&self) -> bool { false }
 }
 
 #[derive(Clone, Debug)]
@@ -88,8 +90,8 @@ impl Collidable for Terrain {
     fn shape_type(&self) -> &ShapeType { &self.shape_type }
     fn position(&self) -> &Vec<Position> { &self.position }
     fn size(&self) -> &Vec<u32> { &self.size }
+    fn traversable(&self) -> bool { self.traversable }
 }
-
 
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct GameState {
@@ -323,6 +325,9 @@ fn build_colliders<T: Collidable>(items: &[T], skip_id: Option<u64>) -> (RigidBo
     for item in items {
         if let Some(skip_id) = skip_id {
             if item.id() == skip_id { continue; }
+        }
+        if item.traversable() {
+            continue;
         }
         if let Some((rb, col)) = create_collider(&item.shape_type(), &item.position(), &item.size()) {
             let body_handle = bodies.insert(rb);
@@ -675,7 +680,7 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                             &new_pos,
                             &unit.size,
                             &terrains,
-                            Some(unit.id),
+                            None,
                         );
                         if !will_collide_terrains {
                             ctx.db.unit().id().update(Unit { 
