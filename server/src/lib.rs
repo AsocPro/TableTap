@@ -293,7 +293,7 @@ fn check_shape_collision_items<T: Collidable>(
     items: &[T],
     skip_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
 ) -> bool {
-    let (bodies, colliders, handle_to_id) = build_colliders(items, skip_id);
+    let (bodies, colliders, handle_to_id) = build_colliders(items, true, skip_id);
     
     // Prepare the moving shape
     let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
@@ -318,7 +318,7 @@ fn check_shape_collision_items<T: Collidable>(
     colliding
 }
 
-fn build_colliders<T: Collidable>(items: &[T], skip_id: Option<u64>) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
+fn build_colliders<T: Collidable>(items: &[T], traversable_check: bool, skip_id: Option<u64>) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
     let mut bodies = RigidBodySet::new();
     let mut colliders = ColliderSet::new();
     let mut handle_to_id = std::collections::HashMap::new();
@@ -326,7 +326,7 @@ fn build_colliders<T: Collidable>(items: &[T], skip_id: Option<u64>) -> (RigidBo
         if let Some(skip_id) = skip_id {
             if item.id() == skip_id { continue; }
         }
-        if item.traversable() {
+        if traversable_check && item.traversable() {
             continue;
         }
         if let Some((rb, col)) = create_collider(&item.shape_type(), &item.position(), &item.size()) {
@@ -339,7 +339,7 @@ fn build_colliders<T: Collidable>(items: &[T], skip_id: Option<u64>) -> (RigidBo
 }
 
 fn find_item_at_point<T: Collidable>(items: &[T], x: u32, y: u32) -> Option<u64> {
-    let (bodies, colliders, handle_to_id) = build_colliders(items, None);
+    let (bodies, colliders, handle_to_id) = build_colliders(items, false, None);
     let mut pipeline = QueryPipeline::new();
     pipeline.update(&bodies, &colliders);
     let click_point = Point::new(x as f32, y as f32);
