@@ -5,6 +5,54 @@ use spacetimedb::SpacetimeType;
 use rapier2d::prelude::*;
 use std::time::Instant;
 
+
+const BOARD_WIDTH: u32 = 600;
+const BOARD_HEIGHT: u32 = 400;
+
+fn border_terrain_lines() -> Vec<Terrain> {
+    vec![
+        Terrain {
+            id: 1001,
+            shape_type: ShapeType::Line,
+            size: vec![1],
+            color: "rgba(0,0,0,1)".to_string(),
+            position: vec![Position { x: 0, y: 0 }, Position { x: BOARD_WIDTH, y: 0 }],
+            traversable: false,
+        },
+        Terrain {
+            id: 1002,
+            shape_type: ShapeType::Line,
+            size: vec![1],
+            color: "rgba(0,0,0,1)".to_string(),
+            position: vec![Position { x: BOARD_WIDTH, y: 0 }, Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }],
+            traversable: false,
+        },
+        Terrain {
+            id: 1003,
+            shape_type: ShapeType::Line,
+            size: vec![1],
+            color: "rgba(0,0,0,1)".to_string(),
+            position: vec![Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }, Position { x: 0, y: BOARD_HEIGHT }],
+            traversable: false,
+        },
+        Terrain {
+            id: 1004,
+            shape_type: ShapeType::Line,
+            size: vec![1],
+            color: "rgba(0,0,0,1)".to_string(),
+            position: vec![Position { x: 0, y: BOARD_HEIGHT }, Position { x: 0, y: 0 }],
+            traversable: false,
+        },
+    ]
+}
+
+trait Collidable {
+    fn id(&self) -> u64;
+    fn shape_type(&self) -> &ShapeType;
+    fn position(&self) -> &Vec<Position>;
+    fn size(&self) -> &Vec<u32>;
+}
+
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = unit, public)]
 pub struct Unit {
@@ -14,6 +62,13 @@ pub struct Unit {
     size: Vec<u32>,
     color: String,
     position: Vec<Position>,
+}
+
+impl Collidable for Unit {
+    fn id(&self) -> u64 { self.id }
+    fn shape_type(&self) -> &ShapeType { &self.shape_type }
+    fn position(&self) -> &Vec<Position> { &self.position }
+    fn size(&self) -> &Vec<u32> { &self.size }
 }
 
 #[derive(Clone, Debug)]
@@ -27,6 +82,14 @@ pub struct Terrain {
     position: Vec<Position>,
     traversable: bool,
 }
+
+impl Collidable for Terrain {
+    fn id(&self) -> u64 { self.id }
+    fn shape_type(&self) -> &ShapeType { &self.shape_type }
+    fn position(&self) -> &Vec<Position> { &self.position }
+    fn size(&self) -> &Vec<u32> { &self.size }
+}
+
 
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct GameState {
@@ -221,56 +284,15 @@ fn create_collider(
     Some((rigid_body, collider))
 }
 
-fn check_shape_collision_all(
+fn check_shape_collision_items<T: Collidable>(
     moving_shape_type: &ShapeType,
     moving_pos: &[Position],
     moving_size: &[u32],
-    units: &[Unit],
-    terrains: &[Terrain],
-    skip_unit_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
+    items: &[T],
+    skip_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
 ) -> bool {
-    let mut bodies = RigidBodySet::new();
-    let mut colliders = ColliderSet::new();
-    let mut collider_handles = Vec::new();
-    // Add all units
-    for unit in units {
-        if let Some(skip_id) = skip_unit_id {
-            if unit.id == skip_id { continue; }
-        }
-        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
-            let body_handle = bodies.insert(rb);
-            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            collider_handles.push(col_handle);
-        }
-    }
-    // Add all terrain
-    for terrain in terrains {
-        if terrain.traversable { continue; }
-        if let Some((rb, col)) = create_collider(&terrain.shape_type, &terrain.position, &terrain.size) {
-            let body_handle = bodies.insert(rb);
-            let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            collider_handles.push(col_handle);
-        }
-    }
-    // Add board borders as lines (segments)
-    const BOARD_WIDTH: u32 = 600;
-    const BOARD_HEIGHT: u32 = 400;
-    let borders = [
-        // Top border
-        (Position { x: 0, y: 0 }, Position { x: BOARD_WIDTH, y: 0 }),
-        // Right border
-        (Position { x: BOARD_WIDTH, y: 0 }, Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }),
-        // Bottom border
-        (Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }, Position { x: 0, y: BOARD_HEIGHT }),
-        // Left border
-        (Position { x: 0, y: BOARD_HEIGHT }, Position { x: 0, y: 0 }),
-    ];
-    for (start, end) in borders.iter() {
-        if let Some((rb, col)) = create_collider(&ShapeType::Line, &[start.clone(), end.clone()], &[1]) {
-            let body_handle = bodies.insert(rb);
-            colliders.insert_with_parent(col, body_handle, &mut bodies);
-        }
-    }
+    let (bodies, colliders, handle_to_id) = build_colliders(items, skip_id);
+    
     // Prepare the moving shape
     let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
         Some(s) => s,
@@ -294,41 +316,44 @@ fn check_shape_collision_all(
     colliding
 }
 
-fn build_unit_colliders(units: &[Unit]) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
+fn build_colliders<T: Collidable>(items: &[T], skip_id: Option<u64>) -> (RigidBodySet, ColliderSet, std::collections::HashMap<rapier2d::prelude::ColliderHandle, u64>) {
     let mut bodies = RigidBodySet::new();
     let mut colliders = ColliderSet::new();
     let mut handle_to_id = std::collections::HashMap::new();
-    for unit in units {
-        if let Some((rb, col)) = create_collider(&unit.shape_type, &unit.position, &unit.size) {
+    for item in items {
+        if let Some(skip_id) = skip_id {
+            if item.id() == skip_id { continue; }
+        }
+        if let Some((rb, col)) = create_collider(&item.shape_type(), &item.position(), &item.size()) {
             let body_handle = bodies.insert(rb);
             let col_handle = colliders.insert_with_parent(col, body_handle, &mut bodies);
-            handle_to_id.insert(col_handle, unit.id);
+            handle_to_id.insert(col_handle, item.id());
         }
     }
     (bodies, colliders, handle_to_id)
 }
 
-fn find_unit_at_point(units: &[Unit], x: u32, y: u32) -> Option<u64> {
-    let (bodies, colliders, handle_to_id) = build_unit_colliders(units);
+fn find_item_at_point<T: Collidable>(items: &[T], x: u32, y: u32) -> Option<u64> {
+    let (bodies, colliders, handle_to_id) = build_colliders(items, None);
     let mut pipeline = QueryPipeline::new();
     pipeline.update(&bodies, &colliders);
     let click_point = Point::new(x as f32, y as f32);
-    let mut found_unit_id = None;
+    let mut found_item_id = None;
     pipeline.intersections_with_point(
         &bodies,
         &colliders,
         &click_point,
         QueryFilter::default(),
         |handle| {
-            if let Some(&unit_id) = handle_to_id.get(&handle) {
-                found_unit_id = Some(unit_id);
+            if let Some(&item_id) = handle_to_id.get(&handle) {
+                found_item_id = Some(item_id);
                 false
             } else {
                 true
             }
         },
     );
-    found_unit_id
+    found_item_id
 }
 
 #[spacetimedb::reducer(init)]
@@ -445,6 +470,10 @@ pub fn init(_ctx: &ReducerContext) {
         color: "rgba(0, 0, 0, 1.0)".to_string(),
         position: vec![Position { x: 250, y: 50 }],
     });
+
+    for t in border_terrain_lines() {
+        _ctx.db.terrain().insert(t);
+    }
 }
 
 #[spacetimedb::reducer(client_connected)]
@@ -507,16 +536,14 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 #[spacetimedb::reducer]
 pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
     let units: Vec<Unit> = ctx.db.unit().iter().collect();
-    if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+    if let Some(unit_id) = find_item_at_point(&units, x, y) {
         ctx.db.unit().id().delete(unit_id);
         return;
     }
-    for terrain in ctx.db.terrain().iter() {
-        if x >= terrain.position[0].x && x <= terrain.position[0].x + terrain.size[0] &&
-           y >= terrain.position[0].y && y <= terrain.position[0].y + terrain.size[1] {
-            ctx.db.terrain().id().delete(terrain.id);
-            return;
-        }
+    let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+    if let Some(terrain_id) = find_item_at_point(&terrains, x, y) {
+        ctx.db.terrain().id().delete(terrain_id);
+        return;
     }
 }
 
@@ -615,7 +642,7 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
     match event_type.as_str() {
         "mousedown" => {
             let units: Vec<Unit> = ctx.db.unit().iter().collect();
-            if let Some(unit_id) = find_unit_at_point(&units, x, y) {
+            if let Some(unit_id) = find_item_at_point(&units, x, y) {
                 ctx.db.selected_unit().insert(SelectedUnit { 
                     id: unit_id,
                     start_x: x,
@@ -634,23 +661,31 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     let new_pos = vec![Position { x: new_x, y: new_y }];
                     let units: Vec<Unit> = ctx.db.unit().iter().collect();
                     let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
-                    let will_collide = check_shape_collision_all(
+                    let will_collide = check_shape_collision_items(
                         &unit.shape_type,
                         &new_pos,
                         &unit.size,
                         &units,
-                        &terrains,
                         Some(unit.id),
                     );
 
                     if !will_collide {
-                        ctx.db.unit().id().update(Unit { 
-                            id: unit.id, 
-                            shape_type: unit.shape_type, 
-                            size: unit.size, 
-                            color: unit.color, 
-                            position: new_pos,
-                        });
+                        let will_collide_terrains = check_shape_collision_items(
+                            &unit.shape_type,
+                            &new_pos,
+                            &unit.size,
+                            &terrains,
+                            Some(unit.id),
+                        );
+                        if !will_collide_terrains {
+                            ctx.db.unit().id().update(Unit { 
+                                id: unit.id,
+                                shape_type: unit.shape_type,
+                                size: unit.size,
+                                color: unit.color,
+                                position: new_pos,
+                            });
+                        }
                     }
                 }
             }
