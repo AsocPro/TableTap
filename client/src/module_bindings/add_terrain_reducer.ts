@@ -36,7 +36,7 @@ import type {
 import { Position as __Position } from "./position_type";
 
 export type AddTerrain = {
-  terrainId: bigint,
+  shapeType: __ShapeType,
   size: number[],
   color: string,
   position: __Position[],
@@ -53,7 +53,7 @@ export namespace AddTerrain {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("terrainId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
       new ProductTypeElement("color", AlgebraicType.createStringType()),
       new ProductTypeElement("position", AlgebraicType.createArrayType(__Position.getTypeScriptAlgebraicType())),

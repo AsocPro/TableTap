@@ -257,19 +257,19 @@ export class RemoteReducers {
     this.connection.offReducer("add_overlay", callback);
   }
 
-  addTerrain(terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) {
-    const __args = { terrainId, size, color, position, traversable };
+  addTerrain(shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) {
+    const __args = { shapeType, size, color, position, traversable };
     let __writer = new BinaryWriter(1024);
     AddTerrain.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_terrain", __argsBuffer, this.setCallReducerFlags.addTerrainFlags);
   }
 
-  onAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) => void) {
+  onAddTerrain(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.onReducer("add_terrain", callback);
   }
 
-  removeOnAddTerrain(callback: (ctx: ReducerEventContext, terrainId: bigint, size: number[], color: string, position: Position[], traversable: boolean) => void) {
+  removeOnAddTerrain(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.offReducer("add_terrain", callback);
   }
 
