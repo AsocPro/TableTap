@@ -17,11 +17,11 @@ export class GameSetupTab {
     private createContent() {
         const setupContainer = document.createElement('div');
         setupContainer.style.display = 'grid';
-        setupContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        setupContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
         setupContainer.style.gap = '20px';
         
         // Create forms for each object type
-        ['unit', 'obstacle', 'terrain'].forEach(type => {
+        ['unit', 'terrain'].forEach(type => {
             const form = document.createElement('form');
             form.style.backgroundColor = '#fff';
             form.style.padding = '10px';
@@ -45,7 +45,6 @@ export class GameSetupTab {
                         { name: 'color', type: 'color', value: '#3498db' }
                     ];
                     break;
-                case 'obstacle':
                 case 'terrain':
                     fields = [
                         { name: 'x', type: 'number', value: 100 },
@@ -75,6 +74,21 @@ export class GameSetupTab {
                 form.appendChild(label);
                 form.appendChild(input);
             });
+            
+            // Add traversable checkbox for terrain
+            if (type === 'terrain') {
+                const traversableCheckbox = document.createElement('input');
+                traversableCheckbox.type = 'checkbox';
+                traversableCheckbox.id = 'traversable';
+                traversableCheckbox.name = 'traversable';
+                inputs['traversable'] = traversableCheckbox;
+                
+                const label = document.createElement('label');
+                label.htmlFor = 'traversable';
+                label.textContent = 'Traversable';
+                form.appendChild(label);
+                form.appendChild(traversableCheckbox);
+            }
             
             // Create add button
             const addButton = document.createElement('button');
@@ -112,22 +126,14 @@ export class GameSetupTab {
                             colorName
                         );
                         break;
-                    case 'obstacle':
-                        this.dbConnection.reducers.addObstacle(
-                            BigInt(Date.now()),
-                            parseInt(inputs['x']?.value || '100'),
-                            parseInt(inputs['y']?.value || '100'),
-                            parseInt(inputs['length']?.value || '100'),
-                            parseInt(inputs['height']?.value || '50')
-                        );
-                        break;
                     case 'terrain':
                         this.dbConnection.reducers.addTerrain(
                             BigInt(Date.now()),
                             parseInt(inputs['x']?.value || '100'),
                             parseInt(inputs['y']?.value || '100'),
                             parseInt(inputs['length']?.value || '100'),
-                            parseInt(inputs['height']?.value || '50')
+                            parseInt(inputs['height']?.value || '50'),
+                            (inputs['traversable'] as HTMLInputElement).checked
                         );
                         break;
                 }
