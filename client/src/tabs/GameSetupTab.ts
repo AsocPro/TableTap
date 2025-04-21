@@ -209,6 +209,7 @@ export class GameSetupTab {
             // Dispatch to correct reducer
             if (whatToAdd === 'unit') {
                 this.dbConnection.reducers.addUnit(
+                    shapeTypeEnum[shapeType],
                     size,
                     colorName,
                     position

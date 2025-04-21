@@ -367,7 +367,7 @@ fn find_item_at_point<T: Collidable>(items: &[T], x: u32, y: u32) -> Option<u64>
 #[spacetimedb::reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
     _ctx.db.unit().insert(Unit { 
-        id: 1, 
+        id: 0, 
         shape_type: ShapeType::Circle,
         size: vec![28], 
         color: "blue".to_string(),
@@ -375,14 +375,14 @@ pub fn init(_ctx: &ReducerContext) {
     });
     
     _ctx.db.unit().insert(Unit { 
-        id: 2, 
+        id: 0, 
         shape_type: ShapeType::Circle,
         size: vec![28], 
         color: "red".to_string(),
         position: vec![Position { x: 150, y: 50 }],
     });
     _ctx.db.unit().insert(Unit { 
-        id: 3, 
+        id: 0, 
         shape_type: ShapeType::Rectangle,
         size: vec![30, 30],
         color: "yellow".to_string(),
@@ -390,7 +390,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
     
     _ctx.db.terrain().insert(Terrain { 
-        id: 1, 
+        id: 0, 
         shape_type: ShapeType::Rectangle,
         size: vec![150, 100],
         color: "#8fbc8f".to_string(),
@@ -399,7 +399,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
     
     _ctx.db.terrain().insert(Terrain { 
-        id: 2, 
+        id: 0, 
         shape_type: ShapeType::Rectangle,
         size: vec![80, 80],
         color: "#8fbc8f".to_string(),
@@ -408,7 +408,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
 
     _ctx.db.terrain().insert(Terrain { 
-        id: 3, 
+        id: 0, 
         shape_type: ShapeType::Rectangle,
         size: vec![120, 60],
         color: "#8b4513".to_string(),  
@@ -417,7 +417,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
     
     _ctx.db.terrain().insert(Terrain { 
-        id: 4, 
+        id: 0, 
         shape_type: ShapeType::Circle,
         size: vec![50],  
         color: "#8b4513".to_string(),  
@@ -426,7 +426,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
     
     _ctx.db.terrain().insert(Terrain {
-        id: 5,
+        id: 0,
         shape_type: ShapeType::Line,
         size: vec![3],
         color: "rgba(255, 0, 0, 0.8)".to_string(),
@@ -435,7 +435,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
 
     _ctx.db.underlay().insert(Underlay {
-        id: 1,
+        id: 0,
         shape_type: ShapeType::Circle,
         size: vec![100],
         color: "rgba(0, 255, 0, 0.2)".to_string(),
@@ -443,7 +443,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
 
     _ctx.db.underlay().insert(Underlay {
-        id: 2,
+        id: 0,
         shape_type: ShapeType::Rectangle,
         size: vec![100, 100],
         color: "rgba(255, 165, 0, 0.2)".to_string(),
@@ -451,7 +451,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
 
     _ctx.db.overlay().insert(Overlay {
-        id: 1,
+        id: 0,
         shape_type: ShapeType::Line,
         size: vec![3],
         color: "rgba(255, 0, 0, 0.8)".to_string(),
@@ -459,7 +459,7 @@ pub fn init(_ctx: &ReducerContext) {
     });
 
     _ctx.db.overlay().insert(Overlay {
-        id: 2,
+        id: 0,
         shape_type: ShapeType::Polygon,
         size: vec![0],
         color: "rgba(0, 0, 255, 0.3)".to_string(),
@@ -512,28 +512,6 @@ pub fn add_terrain(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, 
         color, 
         position,
         traversable,
-    });
-}
-
-#[spacetimedb::reducer]
-pub fn add_underlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
-    ctx.db.underlay().insert(Underlay { 
-        id: 0,
-        shape_type, 
-        size, 
-        color, 
-        position,
-    });
-}
-
-#[spacetimedb::reducer]
-pub fn add_overlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
-    ctx.db.overlay().insert(Overlay { 
-        id: 0,
-        shape_type, 
-        size, 
-        color, 
-        position,
     });
 }
 

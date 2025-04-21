@@ -289,19 +289,19 @@ export class RemoteReducers {
     this.connection.offReducer("add_underlay", callback);
   }
 
-  addUnit(size: number[], color: string, position: Position[]) {
-    const __args = { size, color, position };
+  addUnit(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
   }
 
-  onAddUnit(callback: (ctx: ReducerEventContext, size: number[], color: string, position: Position[]) => void) {
+  onAddUnit(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_unit", callback);
   }
 
-  removeOnAddUnit(callback: (ctx: ReducerEventContext, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_unit", callback);
   }
 
