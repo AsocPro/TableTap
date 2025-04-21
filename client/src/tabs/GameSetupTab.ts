@@ -119,7 +119,6 @@ export class GameSetupTab {
                         
                         const colorName = hexToName[color] || color;
                         this.dbConnection.reducers.addUnit(
-                            BigInt(Date.now()),
                             parseInt(inputs['x']?.value || '100'),
                             parseInt(inputs['y']?.value || '100'),
                             parseInt(inputs['size']?.value || '28'),
@@ -127,12 +126,15 @@ export class GameSetupTab {
                         );
                         break;
                     case 'terrain':
+                        // Rectangle terrain by default, but you could add UI for other types
+                        const shapeType = 1; // Assuming 1 = Rectangle, or use the correct enum value from your bindings
                         this.dbConnection.reducers.addTerrain(
-                            BigInt(Date.now()),
-                            parseInt(inputs['x']?.value || '100'),
-                            parseInt(inputs['y']?.value || '100'),
-                            parseInt(inputs['length']?.value || '100'),
-                            parseInt(inputs['height']?.value || '50'),
+                            shapeType,
+                            [parseInt(inputs['length']?.value || '100'), parseInt(inputs['height']?.value || '50')],
+                            colorName,
+                            [
+                                { x: parseInt(inputs['x']?.value || '100'), y: parseInt(inputs['y']?.value || '100') }
+                            ],
                             (inputs['traversable'] as HTMLInputElement).checked
                         );
                         break;

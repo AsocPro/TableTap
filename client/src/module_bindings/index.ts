@@ -241,19 +241,19 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addOverlay(overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
-    const __args = { overlayId, shapeType, size, color, position };
+  addOverlay(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddOverlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_overlay", __argsBuffer, this.setCallReducerFlags.addOverlayFlags);
   }
 
-  onAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  onAddOverlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_overlay", callback);
   }
 
-  removeOnAddOverlay(callback: (ctx: ReducerEventContext, overlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddOverlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_overlay", callback);
   }
 
@@ -273,35 +273,35 @@ export class RemoteReducers {
     this.connection.offReducer("add_terrain", callback);
   }
 
-  addUnderlay(underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
-    const __args = { underlayId, shapeType, size, color, position };
+  addUnderlay(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnderlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_underlay", __argsBuffer, this.setCallReducerFlags.addUnderlayFlags);
   }
 
-  onAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  onAddUnderlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_underlay", callback);
   }
 
-  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, underlayId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_underlay", callback);
   }
 
-  addUnit(unitId: bigint, size: number[], color: string, position: Position[]) {
-    const __args = { unitId, size, color, position };
+  addUnit(size: number[], color: string, position: Position[]) {
+    const __args = { size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
   }
 
-  onAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, size: number[], color: string, position: Position[]) => void) {
+  onAddUnit(callback: (ctx: ReducerEventContext, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_unit", callback);
   }
 
-  removeOnAddUnit(callback: (ctx: ReducerEventContext, unitId: bigint, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_unit", callback);
   }
 

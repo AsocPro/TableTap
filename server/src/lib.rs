@@ -5,7 +5,6 @@ use spacetimedb::SpacetimeType;
 use rapier2d::prelude::*;
 use std::time::Instant;
 
-
 const BOARD_WIDTH: u32 = 600;
 const BOARD_HEIGHT: u32 = 400;
 
@@ -57,6 +56,7 @@ trait Collidable {
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = unit, public)]
 pub struct Unit {
+    #[auto_inc]
     #[primary_key]
     id: u64,
     shape_type: ShapeType,
@@ -76,7 +76,8 @@ impl Collidable for Unit {
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = terrain, public)]
 pub struct Terrain {
-     #[primary_key]
+    #[auto_inc]
+    #[primary_key]
     id: u64,
     shape_type: ShapeType,
     size: Vec<u32>,
@@ -115,6 +116,7 @@ pub struct Action {
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = underlay, public)]
 pub struct Underlay {
+    #[auto_inc]
     #[primary_key]
     id: u64,
     shape_type: ShapeType,
@@ -126,6 +128,7 @@ pub struct Underlay {
 #[derive(Clone, Debug)]
 #[spacetimedb::table(name = overlay, public)]
 pub struct Overlay {
+    #[auto_inc]
     #[primary_key]
     id: u64,
     shape_type: ShapeType,
@@ -490,13 +493,9 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 }
 
 #[spacetimedb::reducer]
-pub fn add_unit(ctx: &ReducerContext, unit_id: u64, size: Vec<u32>, color: String, position: Vec<Position>) {
-    let mut new_id = unit_id;
-    while let Some(_unit) = ctx.db.unit().id().find(unit_id) {
-        new_id = new_id + 1;
-    }
+pub fn add_unit(ctx: &ReducerContext, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.unit().insert(Unit { 
-        id: new_id, 
+        id: 0, 
         shape_type: ShapeType::Circle, 
         size, 
         color, 
@@ -505,14 +504,10 @@ pub fn add_unit(ctx: &ReducerContext, unit_id: u64, size: Vec<u32>, color: Strin
 }
 
 #[spacetimedb::reducer]
-pub fn add_terrain(ctx: &ReducerContext, terrain_id: u64, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool) {
-    let mut new_id = terrain_id;
-    while let Some(_terrain) = ctx.db.terrain().id().find(terrain_id) {
-        new_id = new_id + 1;
-    }
+pub fn add_terrain(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool) {
     ctx.db.terrain().insert(Terrain { 
-        id: new_id, 
-        shape_type: ShapeType::Rectangle, 
+        id: 0,
+        shape_type, 
         size, 
         color, 
         position,
@@ -595,13 +590,9 @@ pub fn chat_message(ctx: &ReducerContext, message: String) {
 }
 
 #[spacetimedb::reducer]
-pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
-    let mut new_id = underlay_id;
-    while let Some(_underlay) = ctx.db.underlay().id().find(underlay_id) {
-        new_id = new_id + 1;
-    }
+pub fn add_underlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.underlay().insert(Underlay { 
-        id: new_id, 
+        id: 0, 
         shape_type, 
         size, 
         color, 
@@ -610,13 +601,9 @@ pub fn add_underlay(ctx: &ReducerContext, underlay_id: u64, shape_type: ShapeTyp
 }
 
 #[spacetimedb::reducer]
-pub fn add_overlay(ctx: &ReducerContext, overlay_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
-    let mut new_id = overlay_id;
-    while let Some(_overlay) = ctx.db.overlay().id().find(overlay_id) {
-        new_id = new_id + 1;
-    }
+pub fn add_overlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.overlay().insert(Overlay { 
-        id: new_id, 
+        id: 0, 
         shape_type, 
         size, 
         color, 
