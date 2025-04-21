@@ -493,10 +493,10 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 }
 
 #[spacetimedb::reducer]
-pub fn add_unit(ctx: &ReducerContext, size: Vec<u32>, color: String, position: Vec<Position>) {
+pub fn add_unit(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.unit().insert(Unit { 
         id: 0, 
-        shape_type: ShapeType::Circle, 
+        shape_type, 
         size, 
         color, 
         position,
@@ -512,6 +512,28 @@ pub fn add_terrain(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, 
         color, 
         position,
         traversable,
+    });
+}
+
+#[spacetimedb::reducer]
+pub fn add_underlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
+    ctx.db.underlay().insert(Underlay { 
+        id: 0,
+        shape_type, 
+        size, 
+        color, 
+        position,
+    });
+}
+
+#[spacetimedb::reducer]
+pub fn add_overlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
+    ctx.db.overlay().insert(Overlay { 
+        id: 0,
+        shape_type, 
+        size, 
+        color, 
+        position,
     });
 }
 

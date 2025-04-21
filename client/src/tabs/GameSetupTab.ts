@@ -1,4 +1,5 @@
 import { DbConnection } from '../module_bindings';
+import { ShapeType } from '../module_bindings/shape_type_type';
 
 export class GameSetupTab {
     private container: HTMLDivElement;
@@ -16,135 +17,229 @@ export class GameSetupTab {
 
     private createContent() {
         const setupContainer = document.createElement('div');
-        setupContainer.style.display = 'grid';
-        setupContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        setupContainer.style.display = 'flex';
+        setupContainer.style.flexDirection = 'column';
         setupContainer.style.gap = '20px';
         
-        // Create forms for each object type
-        ['unit', 'terrain'].forEach(type => {
-            const form = document.createElement('form');
-            form.style.backgroundColor = '#fff';
-            form.style.padding = '10px';
-            form.style.borderRadius = '5px';
-            
-            const title = document.createElement('h3');
-            title.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-            title.style.marginTop = '0';
-            title.style.marginBottom = '10px';
-            form.appendChild(title);
-            
-            let fields: {name: string, type: string, value: any}[] = [];
-            
-            // Define fields based on object type
-            switch (type) {
-                case 'unit':
-                    fields = [
-                        { name: 'x', type: 'number', value: 100 },
-                        { name: 'y', type: 'number', value: 100 },
-                        { name: 'size', type: 'number', value: 28 },
-                        { name: 'color', type: 'color', value: '#3498db' }
-                    ];
-                    break;
-                case 'terrain':
-                    fields = [
-                        { name: 'x', type: 'number', value: 100 },
-                        { name: 'y', type: 'number', value: 100 },
-                        { name: 'length', type: 'number', value: 100 },
-                        { name: 'height', type: 'number', value: 50 }
-                    ];
-                    break;
+        // Top-level form
+        const form = document.createElement('form');
+        form.style.backgroundColor = '#fff';
+        form.style.padding = '10px';
+        form.style.display = 'flex';
+        form.style.flexDirection = 'column';
+        form.style.gap = '10px';
+
+        // What to add
+        const whatToAddLabel = document.createElement('label');
+        whatToAddLabel.textContent = 'Add type:';
+        const whatToAddSelect = document.createElement('select');
+        whatToAddSelect.innerHTML = `
+            <option value="unit">Unit</option>
+            <option value="terrain">Terrain</option>
+            <option value="underlay">Underlay</option>
+            <option value="overlay">Overlay</option>
+        `;
+        form.appendChild(whatToAddLabel);
+        form.appendChild(whatToAddSelect);
+
+        // Shape type
+        const shapeTypeLabel = document.createElement('label');
+        shapeTypeLabel.textContent = 'Shape Type:';
+        const shapeTypeSelect = document.createElement('select');
+        shapeTypeSelect.innerHTML = `
+            <option value="Circle">Circle</option>
+            <option value="Rectangle">Rectangle</option>
+            <option value="Line">Line</option>
+            <option value="Polygon">Polygon</option>
+        `;
+        form.appendChild(shapeTypeLabel);
+        form.appendChild(shapeTypeSelect);
+
+        // Dynamic fields container
+        const dynamicFields = document.createElement('div');
+        dynamicFields.style.display = 'flex';
+        dynamicFields.style.flexDirection = 'column';
+        dynamicFields.style.gap = '8px';
+        form.appendChild(dynamicFields);
+
+        // Helper to clear and generate fields
+        function generateFields() {
+            dynamicFields.innerHTML = '';
+            const shapeType = shapeTypeSelect.value;
+            const whatToAdd = whatToAddSelect.value;
+            // Position fields
+            if (shapeType === 'Circle' || shapeType === 'Rectangle') {
+                dynamicFields.appendChild(makeNumberField('x', 100));
+                dynamicFields.appendChild(makeNumberField('y', 100));
+            } else if (shapeType === 'Line') {
+                dynamicFields.appendChild(makeNumberField('x1', 100));
+                dynamicFields.appendChild(makeNumberField('y1', 100));
+                dynamicFields.appendChild(makeNumberField('x2', 200));
+                dynamicFields.appendChild(makeNumberField('y2', 200));
+            } else if (shapeType === 'Polygon') {
+                // For simplicity, ask for 3 points
+                for (let i = 1; i <= 3; ++i) {
+                    dynamicFields.appendChild(makeNumberField(`x${i}`, 100 * i));
+                    dynamicFields.appendChild(makeNumberField(`y${i}`, 100 * i));
+                }
             }
-            
-            // Create input fields
-            const inputs: Record<string, HTMLInputElement> = {};
-            fields.forEach(field => {
-                const label = document.createElement('label');
-                label.textContent = field.name.charAt(0).toUpperCase() + field.name.slice(1) + ':';
-                label.style.display = 'block';
-                label.style.marginBottom = '5px';
-                
-                const input = document.createElement('input');
-                input.type = field.type;
-                input.value = field.value;
-                input.id = `${type}-${field.name}`;
-                input.style.width = '100%';
-                input.style.marginBottom = '10px';
-                inputs[field.name] = input;
-                
-                form.appendChild(label);
-                form.appendChild(input);
-            });
-            
-            // Add traversable checkbox for terrain
-            if (type === 'terrain') {
+            // Size fields
+            if (shapeType === 'Circle') {
+                dynamicFields.appendChild(makeNumberField('size', 28));
+            } else if (shapeType === 'Rectangle') {
+                dynamicFields.appendChild(makeNumberField('width', 100));
+                dynamicFields.appendChild(makeNumberField('height', 50));
+            } else if (shapeType === 'Line') {
+                dynamicFields.appendChild(makeNumberField('thickness', 1));
+            } else if (shapeType === 'Polygon') {
+                dynamicFields.appendChild(makeNumberField('thickness', 1));
+            }
+            // Color
+            dynamicFields.appendChild(makeColorField('color', '#3498db'));
+            // Traversable (only if terrain)
+            if (whatToAdd === 'terrain') {
+                const traversableDiv = document.createElement('div');
+                traversableDiv.style.display = 'flex';
+                traversableDiv.style.alignItems = 'center';
                 const traversableCheckbox = document.createElement('input');
                 traversableCheckbox.type = 'checkbox';
                 traversableCheckbox.id = 'traversable';
                 traversableCheckbox.name = 'traversable';
-                inputs['traversable'] = traversableCheckbox;
-                
-                const label = document.createElement('label');
-                label.htmlFor = 'traversable';
-                label.textContent = 'Traversable';
-                form.appendChild(label);
-                form.appendChild(traversableCheckbox);
+                const traversableLabel = document.createElement('label');
+                traversableLabel.htmlFor = 'traversable';
+                traversableLabel.textContent = 'Traversable';
+                traversableDiv.appendChild(traversableLabel);
+                traversableDiv.appendChild(traversableCheckbox);
+                dynamicFields.appendChild(traversableDiv);
             }
-            
-            // Create add button
-            const addButton = document.createElement('button');
-            addButton.textContent = `Add ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            addButton.type = 'button';
-            addButton.style.width = '100%';
-            addButton.style.padding = '8px';
-            addButton.style.backgroundColor = '#4CAF50';
-            addButton.style.color = 'white';
-            addButton.style.border = 'none';
-            addButton.style.borderRadius = '4px';
-            addButton.style.cursor = 'pointer';
-            
-            // Add event listener to the button
-            addButton.addEventListener('click', () => {
-                switch (type) {
-                    case 'unit':
-                        const color = inputs['color']?.value;
-                        if (!color) return;
-                        
-                        const hexToName: {[key: string]: string} = {
-                            '#3498db': 'blue',
-                            '#e74c3c': 'red',
-                            '#2ecc71': 'green',
-                            '#f39c12': 'orange',
-                            '#9b59b6': 'purple'
-                        };
-                        
-                        const colorName = hexToName[color] || color;
-                        this.dbConnection.reducers.addUnit(
-                            parseInt(inputs['x']?.value || '100'),
-                            parseInt(inputs['y']?.value || '100'),
-                            parseInt(inputs['size']?.value || '28'),
-                            colorName
-                        );
-                        break;
-                    case 'terrain':
-                        // Rectangle terrain by default, but you could add UI for other types
-                        const shapeType = 1; // Assuming 1 = Rectangle, or use the correct enum value from your bindings
-                        this.dbConnection.reducers.addTerrain(
-                            shapeType,
-                            [parseInt(inputs['length']?.value || '100'), parseInt(inputs['height']?.value || '50')],
-                            colorName,
-                            [
-                                { x: parseInt(inputs['x']?.value || '100'), y: parseInt(inputs['y']?.value || '100') }
-                            ],
-                            (inputs['traversable'] as HTMLInputElement).checked
-                        );
-                        break;
-                }
-            });
-            
-            form.appendChild(addButton);
-            setupContainer.appendChild(form);
+        }
+
+        function makeNumberField(name: string, defaultValue: number) {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            const label = document.createElement('label');
+            label.textContent = name + ':';
+            label.style.width = '80px';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.name = name;
+            input.value = defaultValue.toString();
+            input.style.marginLeft = '8px';
+            div.appendChild(label);
+            div.appendChild(input);
+            return div;
+        }
+        function makeColorField(name: string, defaultValue: string) {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            const label = document.createElement('label');
+            label.textContent = name + ':';
+            label.style.width = '80px';
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.name = name;
+            input.value = defaultValue;
+            input.style.marginLeft = '8px';
+            div.appendChild(label);
+            div.appendChild(input);
+            return div;
+        }
+
+        whatToAddSelect.addEventListener('change', generateFields);
+        shapeTypeSelect.addEventListener('change', generateFields);
+        generateFields(); // Initial call
+
+        // Add button
+        const addButton = document.createElement('button');
+        addButton.textContent = 'Add';
+        addButton.type = 'button';
+        addButton.style.marginTop = '10px';
+        form.appendChild(addButton);
+
+        addButton.addEventListener('click', () => {
+            // Gather values
+            const whatToAdd = whatToAddSelect.value;
+            const shapeType = shapeTypeSelect.value;
+            const fields: {[k: string]: string} = {};
+            for (const input of form.querySelectorAll('input')) {
+                fields[input.name] = input.value;
+            }
+            // Color name
+            const color = fields['color'] || '#3498db';
+            const hexToName: {[key: string]: string} = {
+                '#3498db': 'blue',
+                '#e74c3c': 'red',
+                '#2ecc71': 'green',
+                '#f39c12': 'orange',
+                '#9b59b6': 'purple'
+            };
+            const colorName = hexToName[color] || color;
+            // Position and size by shape
+            let size: number[] = [];
+            let position: any[] = [];
+            if (shapeType === 'Circle') {
+                size = [parseInt(fields['size'] || '28')];
+                position = [{ x: parseInt(fields['x'] || '100'), y: parseInt(fields['y'] || '100') }];
+            } else if (shapeType === 'Rectangle') {
+                size = [parseInt(fields['width'] || '100'), parseInt(fields['height'] || '50')];
+                position = [{ x: parseInt(fields['x'] || '100'), y: parseInt(fields['y'] || '100') }];
+            } else if (shapeType === 'Line') {
+                size = [parseInt(fields['thickness'] || '1')];
+                position = [
+                    { x: parseInt(fields['x1'] || '100'), y: parseInt(fields['y1'] || '100') },
+                    { x: parseInt(fields['x2'] || '200'), y: parseInt(fields['y2'] || '200') }
+                ];
+            } else if (shapeType === 'Polygon') {
+                size = [parseInt(fields['thickness'] || '1')];
+                position = [
+                    { x: parseInt(fields['x1'] || '100'), y: parseInt(fields['y1'] || '100') },
+                    { x: parseInt(fields['x2'] || '200'), y: parseInt(fields['y2'] || '200') },
+                    { x: parseInt(fields['x3'] || '300'), y: parseInt(fields['y3'] || '300') }
+                ];
+            }
+            // ShapeType enum mapping (should match backend)
+            const shapeTypeEnum: {[k: string]: any} = {
+                'Circle': ShapeType.Circle,
+                'Rectangle': ShapeType.Rectangle,
+                'Line': ShapeType.Line,
+                'Polygon': ShapeType.Polygon
+            };
+            // Dispatch to correct reducer
+            if (whatToAdd === 'unit') {
+                this.dbConnection.reducers.addUnit(
+                    size,
+                    colorName,
+                    position
+                );
+            } else if (whatToAdd === 'terrain') {
+                const traversable = !!form.querySelector('input[name=traversable]') && (form.querySelector('input[name=traversable]') as HTMLInputElement).checked;
+                this.dbConnection.reducers.addTerrain(
+                    shapeTypeEnum[shapeType],
+                    size,
+                    colorName,
+                    position,
+                    traversable
+                );
+            } else if (whatToAdd === 'underlay') {
+                this.dbConnection.reducers.addUnderlay(
+                    shapeTypeEnum[shapeType],
+                    size,
+                    colorName,
+                    position
+                );
+            } else if (whatToAdd === 'overlay') {
+                this.dbConnection.reducers.addOverlay(
+                    shapeTypeEnum[shapeType],
+                    size,
+                    colorName,
+                    position
+                );
+            }
         });
-        
+
+        setupContainer.appendChild(form);
         this.container.appendChild(setupContainer);
 
         // Create button container
