@@ -33,7 +33,9 @@ import type {
   ReducerEventContextInterface,
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
+
 import { Position as __Position } from "./position_type";
+import { ShapeType as __ShapeType } from "./shape_type_type";
 
 export type AddTerrain = {
   shapeType: __ShapeType,
