@@ -523,7 +523,7 @@ pub fn init(_ctx: &ReducerContext) {
         });
     
         _ctx.db.overlay().insert(Overlay {
-            id: 3,
+            id: 0,
             game_id,
             shape_type: ShapeType::Text,
             size: vec![24],
@@ -589,13 +589,13 @@ pub fn delete_terrain(ctx: &ReducerContext, terrain_id: u64) {
 }
 
 #[spacetimedb::reducer]
-pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
-    let units: Vec<Unit> = ctx.db.unit().iter().collect();
+pub fn delete_at_coordinates(ctx: &ReducerContext, game_id: u64, x: u32, y: u32) {
+    let units: Vec<Unit> = ctx.db.unit().game_id().filter(&game_id).collect();
     if let Some(unit_id) = find_item_at_point(&units, x, y) {
         ctx.db.unit().id().delete(unit_id);
         return;
     }
-    let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+    let terrains: Vec<Terrain> = ctx.db.terrain().game_id().filter(&game_id).collect();
     if let Some(terrain_id) = find_item_at_point(&terrains, x, y) {
         ctx.db.terrain().id().delete(terrain_id);
         return;
@@ -603,11 +603,11 @@ pub fn delete_at_coordinates(ctx: &ReducerContext, x: u32, y: u32) {
 }
 
 #[spacetimedb::reducer]
-pub fn delete_all(ctx: &ReducerContext) {
-    for unit in ctx.db.unit().iter() {
+pub fn delete_all(ctx: &ReducerContext, game_id: u64) {
+    for unit in ctx.db.unit().game_id().filter(&game_id) {
         ctx.db.unit().id().delete(unit.id);
     }
-    for terrain in ctx.db.terrain().iter() {
+    for terrain in ctx.db.terrain().game_id().filter(&game_id) {
         ctx.db.terrain().id().delete(terrain.id);
     }
 }
@@ -626,10 +626,10 @@ pub fn roll_dice(ctx: &ReducerContext, game_id: u64) {
         action_type: "DICE_ROLL".to_string(),
         description: description,
         game_state: Some(GameState {
-            terrains: ctx.db.terrain().iter().collect(),
-            units: ctx.db.unit().iter().collect(),
-            underlays: ctx.db.underlay().iter().collect(),
-            overlays: ctx.db.overlay().iter().collect(),
+            terrains: ctx.db.terrain().game_id().filter(&game_id).collect(),
+            units: ctx.db.unit().game_id().filter(&game_id).collect(),
+            underlays: ctx.db.underlay().game_id().filter(&game_id).collect(),
+            overlays: ctx.db.overlay().game_id().filter(&game_id).collect(),
             game_id,
         }),
     });
@@ -693,7 +693,7 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
 pub fn handle_mouse_event(ctx: &ReducerContext, game_id: u64, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32) {
     match event_type.as_str() {
         "mousedown" => {
-            let units: Vec<Unit> = ctx.db.unit().iter().collect();
+            let units: Vec<Unit> = ctx.db.unit().game_id().filter(&game_id).collect();
             if let Some(unit_id) = find_item_at_point(&units, x, y) {
                 ctx.db.selected_unit().insert(SelectedUnit { 
                     id: unit_id,
@@ -706,14 +706,14 @@ pub fn handle_mouse_event(ctx: &ReducerContext, game_id: u64, event_type: String
             }
         }
         "mousemove" => {
-            if let Some(selected) = ctx.db.selected_unit().iter().next() {
+            if let Some(selected) = ctx.db.selected_unit().game_id().filter(&game_id).next() {
                 if let Some(unit) = ctx.db.unit().id().find(selected.id) {
                     let new_x = unit.position[0].x + offset_x;
                     let new_y = unit.position[0].y + offset_y;
                     
                     let new_pos = vec![Position { x: new_x, y: new_y }];
-                let units: Vec<Unit> = ctx.db.unit().iter().collect();
-                    let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
+                    let units: Vec<Unit> = ctx.db.unit().game_id().filter(&game_id).collect();
+                    let terrains: Vec<Terrain> = ctx.db.terrain().game_id().filter(&game_id).collect();
                     let will_collide = check_shape_collision_items(
                         &unit.shape_type,
                         &new_pos,
@@ -745,8 +745,8 @@ pub fn handle_mouse_event(ctx: &ReducerContext, game_id: u64, event_type: String
             }
         }
         "mouseup" => {
-            for selected in ctx.db.selected_unit().iter() {
-                    ctx.db.selected_unit().id().delete(selected.id);
+            for selected in ctx.db.selected_unit().game_id().filter(&game_id) {
+                ctx.db.selected_unit().id().delete(selected.id);
             }
         }
         _ => {}
