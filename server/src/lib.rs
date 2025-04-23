@@ -12,39 +12,39 @@ fn border_terrain_lines(game_id: u64) -> Vec<Terrain> {
     vec![
         Terrain {
             id: 1001,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
             color: "rgba(0,0,0,1)".to_string(),
             position: vec![Position { x: 0, y: 0 }, Position { x: BOARD_WIDTH, y: 0 }],
             traversable: false,
-            game_id,
         },
         Terrain {
             id: 1002,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
             color: "rgba(0,0,0,1)".to_string(),
             position: vec![Position { x: BOARD_WIDTH, y: 0 }, Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }],
             traversable: false,
-            game_id,
         },
         Terrain {
             id: 1003,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
             color: "rgba(0,0,0,1)".to_string(),
             position: vec![Position { x: BOARD_WIDTH, y: BOARD_HEIGHT }, Position { x: 0, y: BOARD_HEIGHT }],
             traversable: false,
-            game_id,
         },
         Terrain {
             id: 1004,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
             color: "rgba(0,0,0,1)".to_string(),
             position: vec![Position { x: 0, y: BOARD_HEIGHT }, Position { x: 0, y: 0 }],
             traversable: false,
-            game_id,
         },
     ]
 }
@@ -64,12 +64,12 @@ pub struct Unit {
     #[auto_inc]
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     shape_type: ShapeType,
     size: Vec<u32>,
     color: String,
     position: Vec<Position>,
-    #[index(btree)]
-    game_id: u64,
 }
 
 impl Collidable for Unit {
@@ -87,13 +87,13 @@ pub struct Terrain {
     #[auto_inc]
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     shape_type: ShapeType,
     size: Vec<u32>,
     color: String,
     position: Vec<Position>,
     traversable: bool,
-    #[index(btree)]
-    game_id: u64,
 }
 
 impl Collidable for Terrain {
@@ -119,12 +119,12 @@ pub struct Action {
     #[auto_inc]
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     timestamp: Timestamp,
     action_type: String,
     description: String,
     game_state: Option<GameState>,
-    #[index(btree)]
-    game_id: u64,
 }
 
 #[spacetimedb::table(name = games, public)]
@@ -142,12 +142,12 @@ pub struct Underlay {
     #[auto_inc]
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     shape_type: ShapeType,
     size: Vec<u32>,
     color: String,
     position: Vec<Position>,
-    #[index(btree)]
-    game_id: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -156,12 +156,12 @@ pub struct Overlay {
     #[auto_inc]
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     shape_type: ShapeType,
     size: Vec<u32>,
     color: String,
     position: Vec<Position>,
-    #[index(btree)]
-    game_id: u64,
 }
 
 #[derive(SpacetimeType, Clone, Debug)]
@@ -407,109 +407,110 @@ pub fn init(_ctx: &ReducerContext) {
     for  game_id in 0..2 {
         _ctx.db.unit().insert(Unit { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Circle,
             size: vec![28], 
             color: "blue".to_string(),
             position: vec![Position { x: 50, y: 50 }],
-            game_id,
         });
     
         _ctx.db.unit().insert(Unit { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Circle,
             size: vec![28], 
             color: "red".to_string(),
             position: vec![Position { x: 150, y: 50 }],
-            game_id,
         });
         _ctx.db.unit().insert(Unit { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Rectangle,
             size: vec![30, 30],
             color: "yellow".to_string(),
             position: vec![Position { x: 100, y: 100 }],
-            game_id,
         });
         
         _ctx.db.terrain().insert(Terrain { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Rectangle,
             size: vec![150, 100],
             color: "#8fbc8f".to_string(),
             position: vec![Position { x: 200, y: 250 }, Position { x: 350, y: 350 }],
             traversable: true,
-            game_id,
         });
         
         _ctx.db.terrain().insert(Terrain { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Rectangle,
             size: vec![80, 80],
             color: "#8fbc8f".to_string(),
             position: vec![Position { x: 50, y: 100 }, Position { x: 130, y: 180 }],
             traversable: true,
-            game_id,
         });
     
         _ctx.db.terrain().insert(Terrain { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Rectangle,
             size: vec![120, 60],
             color: "#8b4513".to_string(),  
             position: vec![Position { x: 400, y: 150 }, Position { x: 520, y: 210 }],
             traversable: false,
-            game_id,
         });
         
         _ctx.db.terrain().insert(Terrain { 
             id: 0, 
+            game_id,
             shape_type: ShapeType::Circle,
             size: vec![50],  
             color: "#8b4513".to_string(),  
             position: vec![Position { x: 100, y: 300 }],
             traversable: false,
-            game_id,
         });
         
         _ctx.db.terrain().insert(Terrain {
             id: 0,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![3],
             color: "rgba(255, 0, 0, 0.8)".to_string(),
             position: vec![Position { x: 50, y: 50 }, Position { x: 550, y: 350 }],
             traversable: false,
-            game_id,
         });
     
         _ctx.db.underlay().insert(Underlay {
             id: 0,
+            game_id,
             shape_type: ShapeType::Circle,
             size: vec![100],
             color: "rgba(0, 255, 0, 0.2)".to_string(),
             position: vec![Position { x: 300, y: 300 }],
-            game_id,
         });
     
         _ctx.db.underlay().insert(Underlay {
             id: 0,
+            game_id,
             shape_type: ShapeType::Rectangle,
             size: vec![100, 100],
             color: "rgba(255, 165, 0, 0.2)".to_string(),
             position: vec![Position { x: 100, y: 100 }, Position { x: 200, y: 200 }],
-            game_id,
         });
     
         _ctx.db.overlay().insert(Overlay {
             id: 0,
+            game_id,
             shape_type: ShapeType::Line,
             size: vec![3],
             color: "rgba(255, 0, 0, 0.8)".to_string(),
             position: vec![Position { x: 50, y: 50 }, Position { x: 550, y: 350 }],
-            game_id,
         });
     
         _ctx.db.overlay().insert(Overlay {
             id: 0,
+            game_id,
             shape_type: ShapeType::Polygon,
             size: vec![0],
             color: "rgba(0, 0, 255, 0.3)".to_string(),
@@ -519,16 +520,15 @@ pub fn init(_ctx: &ReducerContext) {
                 Position { x: 500, y: 200 },
                 Position { x: 400, y: 200 }
             ],
-            game_id,
         });
     
         _ctx.db.overlay().insert(Overlay {
             id: 3,
+            game_id,
             shape_type: ShapeType::Text,
             size: vec![24],
             color: "rgba(0, 0, 0, 1.0)".to_string(),
             position: vec![Position { x: 250, y: 50 }],
-            game_id,
         });
     
         for t in border_terrain_lines(game_id) {
@@ -546,27 +546,27 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 }
 
 #[spacetimedb::reducer]
-pub fn add_unit(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, game_id: u64) {
+pub fn add_unit(ctx: &ReducerContext, game_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.unit().insert(Unit { 
         id: 0, 
+        game_id,
         shape_type, 
         size, 
         color, 
         position,
-        game_id,
     });
 }
 
 #[spacetimedb::reducer]
-pub fn add_terrain(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool, game_id: u64) {
+pub fn add_terrain(ctx: &ReducerContext, game_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, traversable: bool) {
     ctx.db.terrain().insert(Terrain { 
         id: 0,
+        game_id,
         shape_type, 
         size, 
         color, 
         position,
         traversable,
-        game_id,
     });
 }
 
@@ -621,6 +621,7 @@ pub fn roll_dice(ctx: &ReducerContext, game_id: u64) {
     
     ctx.db.action().insert(Action {
         id: 0,
+        game_id,
         timestamp: ctx.timestamp,
         action_type: "DICE_ROLL".to_string(),
         description: description,
@@ -631,43 +632,42 @@ pub fn roll_dice(ctx: &ReducerContext, game_id: u64) {
             overlays: ctx.db.overlay().iter().collect(),
             game_id,
         }),
-        game_id,
     });
 }
 
 #[spacetimedb::reducer]
-pub fn chat_message(ctx: &ReducerContext, message: String, game_id: u64) {
+pub fn chat_message(ctx: &ReducerContext, game_id: u64, message: String) {
     ctx.db.action().insert(Action {
         id: 0,
+        game_id,
         timestamp: ctx.timestamp,
         action_type: "CHAT_MESSAGE".to_string(),
         description: message,
         game_state: None,
-        game_id,
     });
 }
 
 #[spacetimedb::reducer]
-pub fn add_underlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, game_id: u64) {
+pub fn add_underlay(ctx: &ReducerContext, game_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.underlay().insert(Underlay { 
         id: 0, 
+        game_id,
         shape_type, 
         size, 
         color, 
         position,
-        game_id,
-       });
+    });
 }
 
 #[spacetimedb::reducer]
-pub fn add_overlay(ctx: &ReducerContext, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>, game_id: u64) {
+pub fn add_overlay(ctx: &ReducerContext, game_id: u64, shape_type: ShapeType, size: Vec<u32>, color: String, position: Vec<Position>) {
     ctx.db.overlay().insert(Overlay { 
         id: 0, 
+        game_id,
         shape_type, 
         size, 
         color, 
         position,
-        game_id,
     });
 }
 
@@ -690,18 +690,18 @@ pub fn delete_overlay(ctx: &ReducerContext, overlay_id: u64) {
 }
 
 #[spacetimedb::reducer]
-pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32, game_id: u64) {
+pub fn handle_mouse_event(ctx: &ReducerContext, game_id: u64, event_type: String, x: u32, y: u32, offset_x: u32, offset_y: u32) {
     match event_type.as_str() {
         "mousedown" => {
             let units: Vec<Unit> = ctx.db.unit().iter().collect();
             if let Some(unit_id) = find_item_at_point(&units, x, y) {
                 ctx.db.selected_unit().insert(SelectedUnit { 
                     id: unit_id,
+                    game_id,
                     start_x: x,
                     start_y: y,
                     offset_x: 0,
                     offset_y: 0,
-                    game_id,
                 });
             }
         }
@@ -712,7 +712,7 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                     let new_y = unit.position[0].y + offset_y;
                     
                     let new_pos = vec![Position { x: new_x, y: new_y }];
-                    let units: Vec<Unit> = ctx.db.unit().iter().collect();
+                let units: Vec<Unit> = ctx.db.unit().iter().collect();
                     let terrains: Vec<Terrain> = ctx.db.terrain().iter().collect();
                     let will_collide = check_shape_collision_items(
                         &unit.shape_type,
@@ -732,13 +732,13 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
                         );
                         if !will_collide_terrains {
                             ctx.db.unit().id().update(Unit { 
-                                id: unit.id,
-                                shape_type: unit.shape_type,
-                                size: unit.size,
-                                color: unit.color,
-                                position: new_pos,
-                                game_id: unit.game_id,
-                            });
+                        id: unit.id,
+                        game_id,
+                        shape_type: unit.shape_type,
+                        size: unit.size,
+                        color: unit.color,
+                        position: new_pos,
+                    });
                         }
                     }
                 }
@@ -746,7 +746,7 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
         }
         "mouseup" => {
             for selected in ctx.db.selected_unit().iter() {
-                ctx.db.selected_unit().id().delete(selected.id);
+                    ctx.db.selected_unit().id().delete(selected.id);
             }
         }
         _ => {}
@@ -757,11 +757,10 @@ pub fn handle_mouse_event(ctx: &ReducerContext, event_type: String, x: u32, y: u
 pub struct SelectedUnit {
     #[primary_key]
     id: u64,
+    #[index(btree)]
+    game_id: u64,
     start_x: u32,
     start_y: u32,
     offset_x: u32,
     offset_y: u32,
-    #[index(btree)]
-    game_id: u64,
 }
-
