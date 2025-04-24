@@ -7,10 +7,12 @@ export class Chat {
     private messageInput!: HTMLInputElement;
     private sendButton!: HTMLButtonElement;
     private MAX_MESSAGES = 100;
+    private game_id: bigint;
 
-    constructor(container: HTMLDivElement, dbConnection: DbConnection) {
+    constructor(container: HTMLDivElement, dbConnection: DbConnection, game_id: bigint) {
         this.container = container;
         this.dbConnection = dbConnection;
+        this.game_id = game_id;
         this.createChatInterface();
         this.setupMessageListener();
     }
@@ -100,7 +102,7 @@ export class Chat {
         const message = this.messageInput.value.trim();
         if (message) {
             // Call the chat_message reducer
-            this.dbConnection.reducers.chatMessage(message);
+            this.dbConnection.reducers.chatMessage(this.game_id, message);
             this.messageInput.value = '';
         }
     }

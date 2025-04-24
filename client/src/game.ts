@@ -33,28 +33,32 @@ export class Game {
     private selectedAction: number | null = null;
     private actionStates: Map<number, GameState> = new Map();
     private renderScheduled: boolean;
+    private game_id: bigint;
 
-    constructor(canvasId: string) {
+    constructor(canvasId: string, gameId: bigint) {
+        this.game_id = gameId;
         this.dbConnection = DbConnection.builder()
             .withUri('ws://localhost:3000')
             .withModuleName('tabletap')
             .onConnect((dbConnection, identity, token) => {
+
                 dbConnection.subscriptionBuilder()
                     .onApplied((ctx) => {
                         console.log("Subscription applied");
                     })
                     .subscribe([
-                        "SELECT * FROM unit", 
-                        "SELECT * FROM terrain", 
-                        "SELECT * FROM action",
-                        "SELECT * FROM underlay",
-                        "SELECT * FROM overlay"
+                        `SELECT * FROM unit WHERE game_id = ${this.game_id}`,
+                        `SELECT * FROM terrain WHERE game_id = ${this.game_id}`,
+                        `SELECT * FROM action WHERE game_id = ${this.game_id}`,
+                        `SELECT * FROM underlay WHERE game_id = ${this.game_id}`,
+                        `SELECT * FROM overlay WHERE game_id = ${this.game_id}`
                     ]);
             })
             .build();
 
         // Initialize empty game state
         this.currentGameState = {
+            gameId: this.game_id,
             terrains: [],
             units: [],
             underlays: [],
@@ -110,7 +114,7 @@ export class Game {
         this.setupDatabaseCallbacks();
         
         // Set up input handling
-        handleInput(this.dbConnection, this.canvasLayers.overlay, () => this.selectedAction !== null);
+        handleInput(this.game_id, this.dbConnection, this.canvasLayers.overlay, () => this.selectedAction !== null);
         
         // Create UI elements
         this.createUI();
@@ -347,9 +351,9 @@ export class Game {
         uiSection.appendChild(actionsContent);
 
         // Initialize components
-        new GameSetupTab(gameSetupContent, this.dbConnection, this.canvasLayers.overlay);
-        new ActionsTab(actionsContent, this.dbConnection);
-        new ActionLog(logSection, this.dbConnection, this);
+        new GameSetupTab(gameSetupContent, this.dbConnection, this.canvasLayers.overlay, this.game_id);
+        new ActionsTab(actionsContent, this.dbConnection, this.game_id);
+        new ActionLog(logSection, this.dbConnection, this.game_id);
 
         // Assemble layout
         topSection.appendChild(canvasSection);

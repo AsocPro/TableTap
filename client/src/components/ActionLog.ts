@@ -3,10 +3,10 @@ import { Game } from '../game';
 
 export class ActionLog {
     private logViewer!: HTMLDivElement;
-    private game: Game;
+    private game_id: bigint;
 
-    constructor(container: HTMLElement, dbConnection: DbConnection, game: Game) {
-        this.game = game;
+    constructor(container: HTMLElement, dbConnection: DbConnection, game_id: bigint) {
+        this.game_id = game_id;
         this.createLogViewer(container);
         this.setupActionListeners(dbConnection);
     }

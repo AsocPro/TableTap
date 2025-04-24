@@ -7,11 +7,13 @@ export class GameSetupTab {
     private deleteMode: boolean = false;
     private deleteOneMode: boolean = false;
     private canvas: HTMLCanvasElement;
+    private game_id: bigint;
 
-    constructor(container: HTMLDivElement, dbConnection: DbConnection, canvas: HTMLCanvasElement) {
+    constructor(container: HTMLDivElement, dbConnection: DbConnection, canvas: HTMLCanvasElement, game_id: bigint) {
         this.container = container;
         this.dbConnection = dbConnection;
         this.canvas = canvas;
+        this.game_id = game_id;
         this.createContent();
     }
 
@@ -209,6 +211,7 @@ export class GameSetupTab {
             // Dispatch to correct reducer
             if (whatToAdd === 'unit') {
                 this.dbConnection.reducers.addUnit(
+                    this.game_id,
                     shapeTypeEnum[shapeType],
                     size,
                     colorName,
@@ -217,6 +220,7 @@ export class GameSetupTab {
             } else if (whatToAdd === 'terrain') {
                 const traversable = !!form.querySelector('input[name=traversable]') && (form.querySelector('input[name=traversable]') as HTMLInputElement).checked;
                 this.dbConnection.reducers.addTerrain(
+                    this.game_id,
                     shapeTypeEnum[shapeType],
                     size,
                     colorName,
@@ -225,6 +229,7 @@ export class GameSetupTab {
                 );
             } else if (whatToAdd === 'underlay') {
                 this.dbConnection.reducers.addUnderlay(
+                    this.game_id,
                     shapeTypeEnum[shapeType],
                     size,
                     colorName,
@@ -232,6 +237,7 @@ export class GameSetupTab {
                 );
             } else if (whatToAdd === 'overlay') {
                 this.dbConnection.reducers.addOverlay(
+                    this.game_id,
                     shapeTypeEnum[shapeType],
                     size,
                     colorName,
@@ -321,7 +327,7 @@ export class GameSetupTab {
         
         clearButton.addEventListener('click', () => {
             if (confirm('Are you sure you want to delete all objects? This action cannot be undone.')) {
-                this.dbConnection.reducers.deleteAll();
+                this.dbConnection.reducers.deleteAll(this.game_id);
                 // Reset delete modes
                 this.deleteMode = false;
                 this.deleteOneMode = false;
@@ -357,7 +363,7 @@ export class GameSetupTab {
         }
         
         // Send coordinates to server for deletion
-        this.dbConnection.reducers.deleteAtCoordinates(x, y);
+        this.dbConnection.reducers.deleteAtCoordinates(this.game_id, x, y);
         
         // If in delete one mode, turn it off after one deletion
         if (this.deleteOneMode) {

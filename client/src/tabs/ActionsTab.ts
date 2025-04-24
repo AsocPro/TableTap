@@ -4,10 +4,12 @@ import { Chat } from '../components/Chat';
 export class ActionsTab {
     private container: HTMLDivElement;
     private dbConnection: DbConnection;
+    private game_id: bigint;
 
-    constructor(container: HTMLDivElement, dbConnection: DbConnection) {
+    constructor(container: HTMLDivElement, dbConnection: DbConnection, game_id: bigint) {
         this.container = container;
         this.dbConnection = dbConnection;
+        this.game_id = game_id;
         this.createContent();
     }
 
@@ -35,7 +37,7 @@ export class ActionsTab {
         rollButton.style.cursor = 'pointer';
         
         rollButton.addEventListener('click', () => {
-            this.dbConnection.reducers.rollDice();
+            this.dbConnection.reducers.rollDice(this.game_id);
         });
         
         actionsSection.appendChild(rollButton);
@@ -61,7 +63,7 @@ export class ActionsTab {
         contentContainer.appendChild(chatSection);
 
         // Initialize chat component
-        new Chat(chatSection, this.dbConnection);
+        new Chat(chatSection, this.dbConnection, this.game_id);
 
         // Add content container to main container
         this.container.appendChild(contentContainer);

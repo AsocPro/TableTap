@@ -2,6 +2,7 @@ import type { Unit } from "./module_bindings";
 import { DbConnection } from './module_bindings';
 
 export function handleInput(
+    game_id: bigint,
     dbConnection: DbConnection,
     canvas: HTMLCanvasElement,
     isHistoricalView: () => boolean
@@ -36,7 +37,7 @@ export function handleInput(
         lastY = y;
 
         // Send mousedown event to server
-        dbConnection.reducers.handleMouseEvent("mousedown", x, y, 0, 0);
+        dbConnection.reducers.handleMouseEvent(game_id, "mousedown", x, y, 0, 0);
     }
 
     function moveUnit(event: MouseEvent | TouchEvent) {
@@ -65,14 +66,14 @@ export function handleInput(
         lastY = y;
 
         // Send mousemove event to server
-        dbConnection.reducers.handleMouseEvent("mousemove", x, y, offsetX, offsetY);
+        dbConnection.reducers.handleMouseEvent(game_id, "mousemove", x, y, offsetX, offsetY);
     }
 
     function stopMove() {
         if (isHistoricalView()) return;
         
         // Send mouseup event to server
-        dbConnection.reducers.handleMouseEvent("mouseup", lastX, lastY, 0, 0);
+        dbConnection.reducers.handleMouseEvent(game_id, "mouseup", lastX, lastY, 0, 0);
     }
 
     // Mouse events
