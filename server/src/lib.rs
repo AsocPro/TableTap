@@ -11,7 +11,7 @@ const BOARD_HEIGHT: u32 = 400;
 fn border_terrain_lines(game_id: u64) -> Vec<Terrain> {
     vec![
         Terrain {
-            id: 1001,
+            id: 0,
             game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
@@ -20,7 +20,7 @@ fn border_terrain_lines(game_id: u64) -> Vec<Terrain> {
             traversable: false,
         },
         Terrain {
-            id: 1002,
+            id: 0,
             game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
@@ -29,7 +29,7 @@ fn border_terrain_lines(game_id: u64) -> Vec<Terrain> {
             traversable: false,
         },
         Terrain {
-            id: 1003,
+            id: 0,
             game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
@@ -38,7 +38,7 @@ fn border_terrain_lines(game_id: u64) -> Vec<Terrain> {
             traversable: false,
         },
         Terrain {
-            id: 1004,
+            id: 0,
             game_id,
             shape_type: ShapeType::Line,
             size: vec![1],
@@ -399,7 +399,7 @@ pub fn init(_ctx: &ReducerContext) {
         description: "Description 1".to_string(),
     });
     _ctx.db.games().insert(Game { 
-        id: 1,
+        id: 0,
         name: "Game 2".to_string(),
         description: "Description 2".to_string(),
     });
