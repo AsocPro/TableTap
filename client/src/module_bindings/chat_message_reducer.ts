@@ -34,6 +34,7 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 export type ChatMessage = {
+  gameId: bigint,
   message: string,
 };
 
@@ -47,6 +48,7 @@ export namespace ChatMessage {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("message", AlgebraicType.createStringType()),
     ]);
   }

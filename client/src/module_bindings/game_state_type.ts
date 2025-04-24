@@ -42,6 +42,7 @@ export type GameState = {
   units: __Unit[],
   underlays: __Underlay[],
   overlays: __Overlay[],
+  gameId: bigint,
 };
 
 /**
@@ -58,6 +59,7 @@ export namespace GameState {
       new ProductTypeElement("units", AlgebraicType.createArrayType(__Unit.getTypeScriptAlgebraicType())),
       new ProductTypeElement("underlays", AlgebraicType.createArrayType(__Underlay.getTypeScriptAlgebraicType())),
       new ProductTypeElement("overlays", AlgebraicType.createArrayType(__Overlay.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
     ]);
   }
 

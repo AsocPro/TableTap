@@ -38,6 +38,7 @@ import { Position as __Position } from "./position_type";
 
 export type Underlay = {
   id: bigint,
+  gameId: bigint,
   shapeType: __ShapeType,
   size: number[],
   color: string,
@@ -55,6 +56,7 @@ export namespace Underlay {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
       new ProductTypeElement("color", AlgebraicType.createStringType()),

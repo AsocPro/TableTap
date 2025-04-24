@@ -35,6 +35,7 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 export type SelectedUnit = {
   id: bigint,
+  gameId: bigint,
   startX: number,
   startY: number,
   offsetX: number,
@@ -52,6 +53,7 @@ export namespace SelectedUnit {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("startX", AlgebraicType.createU32Type()),
       new ProductTypeElement("startY", AlgebraicType.createU32Type()),
       new ProductTypeElement("offsetX", AlgebraicType.createU32Type()),

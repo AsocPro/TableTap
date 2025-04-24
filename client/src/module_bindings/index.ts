@@ -69,6 +69,8 @@ export { RollDice };
 // Import and reexport all table handle types
 import { ActionTableHandle } from "./action_table.ts";
 export { ActionTableHandle };
+import { GamesTableHandle } from "./games_table.ts";
+export { GamesTableHandle };
 import { OverlayTableHandle } from "./overlay_table.ts";
 export { OverlayTableHandle };
 import { SelectedUnitTableHandle } from "./selected_unit_table.ts";
@@ -83,6 +85,8 @@ export { UnitTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
+import { Game } from "./game_type.ts";
+export { Game };
 import { GameState } from "./game_state_type.ts";
 export { GameState };
 import { Overlay } from "./overlay_type.ts";
@@ -105,6 +109,11 @@ const REMOTE_MODULE = {
     action: {
       tableName: "action",
       rowType: Action.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
+    games: {
+      tableName: "games",
+      rowType: Game.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     overlay: {
@@ -241,111 +250,115 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addOverlay(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
-    const __args = { shapeType, size, color, position };
+  addOverlay(gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { gameId, shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddOverlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_overlay", __argsBuffer, this.setCallReducerFlags.addOverlayFlags);
   }
 
-  onAddOverlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  onAddOverlay(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_overlay", callback);
   }
 
-  removeOnAddOverlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddOverlay(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_overlay", callback);
   }
 
-  addTerrain(shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) {
-    const __args = { shapeType, size, color, position, traversable };
+  addTerrain(gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) {
+    const __args = { gameId, shapeType, size, color, position, traversable };
     let __writer = new BinaryWriter(1024);
     AddTerrain.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_terrain", __argsBuffer, this.setCallReducerFlags.addTerrainFlags);
   }
 
-  onAddTerrain(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
+  onAddTerrain(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.onReducer("add_terrain", callback);
   }
 
-  removeOnAddTerrain(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
+  removeOnAddTerrain(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[], traversable: boolean) => void) {
     this.connection.offReducer("add_terrain", callback);
   }
 
-  addUnderlay(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
-    const __args = { shapeType, size, color, position };
+  addUnderlay(gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { gameId, shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnderlay.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_underlay", __argsBuffer, this.setCallReducerFlags.addUnderlayFlags);
   }
 
-  onAddUnderlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  onAddUnderlay(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_underlay", callback);
   }
 
-  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddUnderlay(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_underlay", callback);
   }
 
-  addUnit(shapeType: ShapeType, size: number[], color: string, position: Position[]) {
-    const __args = { shapeType, size, color, position };
+  addUnit(gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) {
+    const __args = { gameId, shapeType, size, color, position };
     let __writer = new BinaryWriter(1024);
     AddUnit.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("add_unit", __argsBuffer, this.setCallReducerFlags.addUnitFlags);
   }
 
-  onAddUnit(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  onAddUnit(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.onReducer("add_unit", callback);
   }
 
-  removeOnAddUnit(callback: (ctx: ReducerEventContext, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
+  removeOnAddUnit(callback: (ctx: ReducerEventContext, gameId: bigint, shapeType: ShapeType, size: number[], color: string, position: Position[]) => void) {
     this.connection.offReducer("add_unit", callback);
   }
 
-  chatMessage(message: string) {
-    const __args = { message };
+  chatMessage(gameId: bigint, message: string) {
+    const __args = { gameId, message };
     let __writer = new BinaryWriter(1024);
     ChatMessage.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("chat_message", __argsBuffer, this.setCallReducerFlags.chatMessageFlags);
   }
 
-  onChatMessage(callback: (ctx: ReducerEventContext, message: string) => void) {
+  onChatMessage(callback: (ctx: ReducerEventContext, gameId: bigint, message: string) => void) {
     this.connection.onReducer("chat_message", callback);
   }
 
-  removeOnChatMessage(callback: (ctx: ReducerEventContext, message: string) => void) {
+  removeOnChatMessage(callback: (ctx: ReducerEventContext, gameId: bigint, message: string) => void) {
     this.connection.offReducer("chat_message", callback);
   }
 
-  deleteAll() {
-    this.connection.callReducer("delete_all", new Uint8Array(0), this.setCallReducerFlags.deleteAllFlags);
+  deleteAll(gameId: bigint) {
+    const __args = { gameId };
+    let __writer = new BinaryWriter(1024);
+    DeleteAll.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_all", __argsBuffer, this.setCallReducerFlags.deleteAllFlags);
   }
 
-  onDeleteAll(callback: (ctx: ReducerEventContext) => void) {
+  onDeleteAll(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
     this.connection.onReducer("delete_all", callback);
   }
 
-  removeOnDeleteAll(callback: (ctx: ReducerEventContext) => void) {
+  removeOnDeleteAll(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
     this.connection.offReducer("delete_all", callback);
   }
 
-  deleteAtCoordinates(x: number, y: number) {
-    const __args = { x, y };
+  deleteAtCoordinates(gameId: bigint, x: number, y: number) {
+    const __args = { gameId, x, y };
     let __writer = new BinaryWriter(1024);
     DeleteAtCoordinates.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("delete_at_coordinates", __argsBuffer, this.setCallReducerFlags.deleteAtCoordinatesFlags);
   }
 
-  onDeleteAtCoordinates(callback: (ctx: ReducerEventContext, x: number, y: number) => void) {
+  onDeleteAtCoordinates(callback: (ctx: ReducerEventContext, gameId: bigint, x: number, y: number) => void) {
     this.connection.onReducer("delete_at_coordinates", callback);
   }
 
-  removeOnDeleteAtCoordinates(callback: (ctx: ReducerEventContext, x: number, y: number) => void) {
+  removeOnDeleteAtCoordinates(callback: (ctx: ReducerEventContext, gameId: bigint, x: number, y: number) => void) {
     this.connection.offReducer("delete_at_coordinates", callback);
   }
 
@@ -413,19 +426,19 @@ export class RemoteReducers {
     this.connection.offReducer("delete_unit", callback);
   }
 
-  handleMouseEvent(eventType: string, x: number, y: number, offsetX: number, offsetY: number) {
-    const __args = { eventType, x, y, offsetX, offsetY };
+  handleMouseEvent(gameId: bigint, eventType: string, x: number, y: number, offsetX: number, offsetY: number) {
+    const __args = { gameId, eventType, x, y, offsetX, offsetY };
     let __writer = new BinaryWriter(1024);
     HandleMouseEvent.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("handle_mouse_event", __argsBuffer, this.setCallReducerFlags.handleMouseEventFlags);
   }
 
-  onHandleMouseEvent(callback: (ctx: ReducerEventContext, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
+  onHandleMouseEvent(callback: (ctx: ReducerEventContext, gameId: bigint, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
     this.connection.onReducer("handle_mouse_event", callback);
   }
 
-  removeOnHandleMouseEvent(callback: (ctx: ReducerEventContext, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
+  removeOnHandleMouseEvent(callback: (ctx: ReducerEventContext, gameId: bigint, eventType: string, x: number, y: number, offsetX: number, offsetY: number) => void) {
     this.connection.offReducer("handle_mouse_event", callback);
   }
 
@@ -445,15 +458,19 @@ export class RemoteReducers {
     this.connection.offReducer("identity_disconnected", callback);
   }
 
-  rollDice() {
-    this.connection.callReducer("roll_dice", new Uint8Array(0), this.setCallReducerFlags.rollDiceFlags);
+  rollDice(gameId: bigint) {
+    const __args = { gameId };
+    let __writer = new BinaryWriter(1024);
+    RollDice.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("roll_dice", __argsBuffer, this.setCallReducerFlags.rollDiceFlags);
   }
 
-  onRollDice(callback: (ctx: ReducerEventContext) => void) {
+  onRollDice(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
     this.connection.onReducer("roll_dice", callback);
   }
 
-  removeOnRollDice(callback: (ctx: ReducerEventContext) => void) {
+  removeOnRollDice(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
     this.connection.offReducer("roll_dice", callback);
   }
 
@@ -532,6 +549,10 @@ export class RemoteTables {
 
   get action(): ActionTableHandle {
     return new ActionTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.action));
+  }
+
+  get games(): GamesTableHandle {
+    return new GamesTableHandle(this.connection.clientCache.getOrCreateTable<Game>(REMOTE_MODULE.tables.games));
   }
 
   get overlay(): OverlayTableHandle {

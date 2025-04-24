@@ -35,6 +35,7 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 export type HandleMouseEvent = {
+  gameId: bigint,
   eventType: string,
   x: number,
   y: number,
@@ -52,6 +53,7 @@ export namespace HandleMouseEvent {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("eventType", AlgebraicType.createStringType()),
       new ProductTypeElement("x", AlgebraicType.createU32Type()),
       new ProductTypeElement("y", AlgebraicType.createU32Type()),

@@ -35,6 +35,7 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 
 export type DeleteAtCoordinates = {
+  gameId: bigint,
   x: number,
   y: number,
 };
@@ -49,6 +50,7 @@ export namespace DeleteAtCoordinates {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("x", AlgebraicType.createU32Type()),
       new ProductTypeElement("y", AlgebraicType.createU32Type()),
     ]);

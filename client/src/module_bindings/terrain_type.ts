@@ -37,6 +37,7 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 export type Terrain = {
   id: bigint,
+  gameId: bigint,
   shapeType: __ShapeType,
   size: number[],
   color: string,
@@ -55,6 +56,7 @@ export namespace Terrain {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("shapeType", __ShapeType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("size", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
       new ProductTypeElement("color", AlgebraicType.createStringType()),

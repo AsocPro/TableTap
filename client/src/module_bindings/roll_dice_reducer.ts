@@ -34,7 +34,9 @@ import type {
   SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type RollDice = {};
+export type RollDice = {
+  gameId: bigint,
+};
 
 /**
  * A namespace for generated helper functions.
@@ -46,6 +48,7 @@ export namespace RollDice {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
     ]);
   }
 

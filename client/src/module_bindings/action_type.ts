@@ -36,6 +36,7 @@ import type {
 } from "@clockworklabs/spacetimedb-sdk";
 export type Action = {
   id: bigint,
+  gameId: bigint,
   timestamp: Timestamp,
   actionType: string,
   description: string,
@@ -53,6 +54,7 @@ export namespace Action {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
       new ProductTypeElement("timestamp", AlgebraicType.createTimestampType()),
       new ProductTypeElement("actionType", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
