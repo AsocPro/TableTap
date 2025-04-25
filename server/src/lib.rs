@@ -3,7 +3,6 @@ use spacetimedb::rand::Rng;
 use spacetimedb::Timestamp;
 use spacetimedb::SpacetimeType;
 use rapier2d::prelude::*;
-use std::time::Instant;
 
 const BOARD_WIDTH: u32 = 600;
 const BOARD_HEIGHT: u32 = 400;
@@ -55,7 +54,6 @@ trait Collidable {
     fn position(&self) -> &Vec<Position>;
     fn size(&self) -> &Vec<u32>;
     fn traversable(&self) -> bool;
-    fn game_id(&self) -> u64;
 }
 
 #[derive(Clone, Debug)]
@@ -78,7 +76,6 @@ impl Collidable for Unit {
     fn position(&self) -> &Vec<Position> { &self.position }
     fn size(&self) -> &Vec<u32> { &self.size }
     fn traversable(&self) -> bool { false }
-    fn game_id(&self) -> u64 { self.game_id }
 }
 
 #[derive(Clone, Debug)]
@@ -102,7 +99,6 @@ impl Collidable for Terrain {
     fn position(&self) -> &Vec<Position> { &self.position }
     fn size(&self) -> &Vec<u32> { &self.size }
     fn traversable(&self) -> bool { self.traversable }
-    fn game_id(&self) -> u64 { self.game_id }
 }
 
 #[derive(SpacetimeType, Clone, Debug)]
@@ -177,59 +173,6 @@ pub enum ShapeType {
     Line,
     Polygon,
     Text,
-}
-
-fn check_shape_collision(
-    shape1_type: &ShapeType,
-    shape1_pos: &[Position],
-    shape1_size: &[u32],
-    shape2_type: &ShapeType,
-    shape2_pos: &[Position],
-    shape2_size: &[u32]
-) -> bool {
-    let mut bodies = RigidBodySet::new();
-    let mut colliders = ColliderSet::new();
-    
-    let shape1_handle = match create_collider(shape1_type, shape1_pos, shape1_size) {
-        Some((rigid_body, collider)) => {
-            let body_handle = bodies.insert(rigid_body);
-            colliders.insert_with_parent(collider, body_handle, &mut bodies)
-        },
-        None => return false,
-    };
-    
-    let shape_obj = match create_shape_obj(shape1_type, shape1_pos, shape1_size) {
-        Some(shape) => shape,
-        None => return false,
-    };
-
-    let new_pos = Isometry::new(vector![shape1_pos[0].x as f32, shape1_pos[0].y as f32], 0.0);
-    
-    let shape2_handle = match create_collider(shape2_type, shape2_pos, shape2_size) {
-        Some((rigid_body, collider)) => {
-            let body_handle = bodies.insert(rigid_body);
-            colliders.insert_with_parent(collider, body_handle, &mut bodies)
-        },
-        None => return false,
-    };
-    
-    let mut pipeline = QueryPipeline::new();
-    pipeline.update(&bodies, &colliders);
-    
-    let mut colliding = false;
-    pipeline.intersections_with_shape(
-        &bodies,
-        &colliders,
-        &new_pos,
-        &*shape_obj,
-        QueryFilter::new().exclude_collider(shape1_handle),
-        |_| {
-            colliding = true;
-            false 
-        },
-    );
-    
-    colliding
 }
 
 fn create_shape_obj(shape_type: &ShapeType, positions: &[Position], sizes: &[u32]) -> Option<SharedShape> {
@@ -323,7 +266,7 @@ fn check_shape_collision_items<T: Collidable>(
     items: &[T],
     skip_id: Option<u64>, // Optionally skip a unit (e.g. the moving one itself)
 ) -> bool {
-    let (bodies, colliders, handle_to_id) = build_colliders(items, true, skip_id);
+    let (bodies, colliders, _) = build_colliders(items, true, skip_id);
     
     // Prepare the moving shape
     let moving_shape = match create_shape_obj(moving_shape_type, moving_pos, moving_size) {
