@@ -1,0 +1,7 @@
+{
+  "name": "tabletap-ci",
+  "engineVersion": "v0.21.0",
+  "sdk": {
+    "source": "go"
+  }
+}

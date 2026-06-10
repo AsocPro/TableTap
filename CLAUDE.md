@@ -35,6 +35,27 @@ bunx vite build      # production build
 
 There are no automated tests in this project.
 
+### Dagger pipeline (`ci/`)
+
+A Dagger pipeline handles containerised builds and spins up a full local dev environment. Run from the repo root with `-m ci`, or `cd ci` first.
+
+```bash
+# First time only — generates go.mod / go.sum
+cd ci && dagger develop
+
+# Build artifacts individually
+dagger -m ci call build-server --src . export --path ./tabletap.wasm
+dagger -m ci call build-client --src . export --path ./dist
+
+# Full dev environment — SpacetimeDB on :3000, client on :8080
+dagger -m ci call dev --src . up --ports 3000:3000 --ports 8080:8080
+# then open http://localhost:8080
+```
+
+The `dev` service builds the WASM and client in isolated containers, then starts `spacetimedb-standalone --in-memory` (v1.12.0), auto-publishes the module, and serves the static client with `python3 -m http.server`. All data is ephemeral — the server starts clean each run.
+
+The `spacetimedb` crate resolves to v1.12.0 (latest in the `^1.0.0` range) which requires rustc ≥ 1.90. The pipeline uses `rust:latest` to satisfy this. There is no `Cargo.lock` — add one if you need reproducible builds.
+
 ## Architecture
 
 ### Data flow
